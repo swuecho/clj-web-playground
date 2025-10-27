@@ -1,6 +1,7 @@
 ;; shadow-cljs configuration
 {:deps true
  :dependencies []
+ :dev-http {8080 "public"}
  :builds
  {:web  
   {:target :browser
