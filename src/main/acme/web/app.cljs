@@ -1,3 +1,8 @@
 (ns acme.web.app)
+
 (defn init []
-  (println "Hello World"))
+  (println "Hello Worldd!"))
+ 
+(defn reload! []
+  (println "Code updated.")
+  )

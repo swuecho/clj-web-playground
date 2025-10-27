@@ -6,7 +6,10 @@
  {:web  
   {:target :browser
     :modules {:main {:init-fn acme.web.app/init}}
-    :devtools {:watch-dir "public"}}}
+    :devtools {:watch-dir "public"
+               :after-load acme.web.app/reload!}
+  }
  }
+}
 
  
