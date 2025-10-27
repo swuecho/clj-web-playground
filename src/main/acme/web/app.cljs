@@ -2,8 +2,10 @@
   (:require [reagent.core :as r]
             [reagent.dom.client :as rdom]))
 
-(defonce form-data (r/atom {:name ""
-                            :email ""}))
+(def default-form-data {:name ""
+                        :email ""})
+
+(defonce form-data (r/atom default-form-data))
 
 (defn handle-submit [event]
   (.preventDefault event)
@@ -24,6 +26,9 @@
 
 (defonce root-instance (atom nil))
 
+(defn reset-state! []
+  (reset! form-data default-form-data))
+
 (defn mount-root []
   (when-let [container (.getElementById js/document "root")]
     (let [instance (or @root-instance
@@ -31,7 +36,12 @@
       (rdom/render instance [form-view]))))
 
 (defn ^:export init []
+  (reset-state!)
   (mount-root))
 
 (defn reload! []
+  (mount-root))
+
+(defn restart! []
+  (reset-state!)
   (mount-root))
