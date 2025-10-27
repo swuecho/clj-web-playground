@@ -2,6 +2,8 @@
   "name": "cljs-001",
   "version": "0.0.1",
   "private": true,
+  "dependencies": {
+  },
   "devDependencies": {
     "shadow-cljs": "^3.2.1"
   }
