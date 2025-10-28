@@ -1,29 +1,11 @@
 (ns acme.web.views
   (:require
-   [clojure.string :as str]
    [reagent.core :as r]
    [re-frame.core :as rf]
    [acme.web.events :as events]
    [acme.web.subs :as subs]
    [acme.web.components :as components]
    ["@rc-component/table" :default rc-table]))
-
-(defn- camel-key [k]
-  (cond
-    (keyword? k)
-    (let [n (name k)]
-      (if (str/includes? n "-")
-        (let [[h & rst] (str/split n #"-")]
-          (apply str h (map str/capitalize rst)))
-        n))
-    :else k))
-
-(defn- style->js [style-map]
-  (->> style-map
-       (map (fn [[k v]]
-              [(camel-key k) v]))
-       (into {})
-       (clj->js)))
 
 (defn users-table
   ([] (users-table {}))
@@ -121,56 +103,28 @@
    (let [users (rf/subscribe [::subs/users])
          loading? (rf/subscribe [::subs/loading?])
          error (rf/subscribe [::subs/error])
-         container-style {:max-width "960px"
-                          :margin "0 auto"
-                          :padding "1.5rem"}
-         table-style {:width "100%"
-                      :box-shadow "0 1px 2px rgba(15, 23, 42, 0.08)"
-                      :border-radius "0.75rem"
-                      :overflow "hidden"
-                      :border "1px solid #e5e7eb"}
-         uuid-cell-style {:font-family "monospace"
-                          :word-break "break-all"
-                          :line-height 1.4}
-         header-style {:background "#f8fafc"
-                       :padding "0.75rem 0.5rem"
-                       :font-weight 600
-                       :border-bottom "1px solid #e2e8f0"
-                       :text-align "left"}
-         cell-style {:padding "0.75rem 0.5rem"
-                     :border-bottom "1px solid #e5e7eb"
-                     :vertical-align "middle"}
-         table-style-js (style->js table-style)
-         header-style-js (style->js header-style)
-         cell-style-js (style->js cell-style)
-         header-style-right-js (style->js (assoc header-style :text-align "right"))
-         cell-style-right-js (style->js (assoc cell-style :text-align "right"))
-         actions-container-style {:display "flex"
-                                  :justify-content "flex-end"
-                                  :flex-wrap "wrap"
-                                  :gap "0.5rem"}
          columns (clj->js
                   [{:title "UUID"
                     :dataIndex "uuid"
                     :key "uuid"
                     :align "left"
                     :onHeaderCell (fn [_]
-                                    #js {:style header-style-js})
+                                    #js {:className "users-table-rc__header-cell"})
                     :onCell (fn [_]
-                              #js {:style cell-style-js})
+                              #js {:className "users-table-rc__body-cell"})
                     :render (fn [uuid _record _index]
-                              (r/as-element [:span {:style uuid-cell-style}
+                              (r/as-element [:span {:class "users-table-rc__uuid"}
                                              (or uuid "-")]))}
                    {:title "Name"
                     :dataIndex "name"
                     :key "name"
                     :align "left"
                     :onHeaderCell (fn [_]
-                                    #js {:style header-style-js})
+                                    #js {:className "users-table-rc__header-cell"})
                     :onCell (fn [_]
-                              #js {:style cell-style-js})
+                              #js {:className "users-table-rc__body-cell"})
                     :render (fn [name _record _index]
-                              (r/as-element [:span {:style {:line-height 1.4}}
+                              (r/as-element [:span {:class "users-table-rc__text"}
                                              (or name "-")]))}
                    {:title "Age"
                     :dataIndex "age"
@@ -178,47 +132,52 @@
                     :width 80
                     :align "left"
                     :onHeaderCell (fn [_]
-                                    #js {:style header-style-js})
+                                    #js {:className "users-table-rc__header-cell"})
                     :onCell (fn [_]
-                              #js {:style cell-style-js})
+                              #js {:className "users-table-rc__body-cell"})
                     :render (fn [age _record _index]
-                              (r/as-element [:span {:style {:line-height 1.4}}
+                              (r/as-element [:span {:class "users-table-rc__text"}
                                              (if (some? age) age "-")]))}
                    {:title "Actions"
                     :dataIndex "uuid"
                     :key "actions"
                     :align "right"
                     :onHeaderCell (fn [_]
-                                    #js {:style header-style-right-js})
+                                    #js {:className "users-table-rc__header-cell users-table-rc__header-cell--right"})
                     :onCell (fn [_]
-                              #js {:style cell-style-right-js})
+                              #js {:className "users-table-rc__body-cell users-table-rc__body-cell--right"})
                     :render (fn [uuid _record _index]
-                              (r/as-element [:div {:style actions-container-style}
+                              (r/as-element [:div {:class "users-table-rc__actions"}
                                              (when uuid
                                                [components/user-row-actions uuid])]))}])
-         empty-state-style {:margin "2rem 0"
-                            :color "#64748b"}]
+         wrap-container (fn [content]
+                          (if wrap?
+                            (into [:div {:class "users-table-rc__container"}] content)
+                            (into [:<>] content)))]
      (fn []
        (let [table-data (->> @users
                              (mapv (fn [user]
                                      (-> user
                                          (assoc :key (:uuid user)))))
                              (clj->js))
-             table-section (cond
-                             @loading? [:p "Loading users..."]
-                             @error [:p {:style {:color "#b91c1c"}} @error]
-                             (empty? @users) [:p {:style empty-state-style} "No users found."]
-                             :else
-                             [:> rc-table {:columns columns
-                                           :data table-data
-                                           :rowKey "uuid"
-                                           :style table-style-js
-                                           :tableLayout "auto"
-                                           :scroll #js {:x "max-content"}}])
-             actions [:div {:style {:margin-top "1.5rem"}}
-                      [:button {:on-click #(rf/dispatch [::events/fetch-users])
-                                :style {:background "#2563eb"
-                                        :color "white"
+              table-section (cond
+                              @loading? [:p {:class "users-table-rc__status users-table-rc__status--loading"}
+                                         "Loading users..."]
+                              @error [:p {:class "users-table-rc__status users-table-rc__status--error"}
+                                      @error]
+                              (empty? @users) [:p {:class "users-table-rc__status users-table-rc__status--empty"}
+                                               "No users found."]
+                              :else
+                              [:> rc-table {:columns columns
+                                            :data table-data
+                                            :rowKey "uuid"
+                                            :className "users-table-rc__table"
+                                            :tableLayout "auto"
+                                            :scroll #js {:x "max-content"}}])
+              actions [:div {:style {:margin-top "1.5rem"}}
+                       [:button {:on-click #(rf/dispatch [::events/fetch-users])
+                                 :style {:background "#2563eb"
+                                         :color "white"
                                         :border "none"
                                         :padding "0.5rem 1rem"
                                         :border-radius "0.375rem"
@@ -234,14 +193,12 @@
                                         :cursor "pointer"}}
                        "Add User"]]
              content (cond-> []
-                       include-aux? (conj [components/toast-banner])
-                       include-aux? (conj [components/add-user-dialog])
-                       title (conj [:h1 {:style {:margin-bottom "1rem"}} title])
-                       true (conj table-section)
-                       true (conj actions))]
-         (if wrap?
-           (into [:div {:style container-style}] content)
-           (into [:<>] content)))))))
+                        include-aux? (conj [components/toast-banner])
+                        include-aux? (conj [components/add-user-dialog])
+                        title (conj [:h1 {:class "users-table-rc__heading"} title])
+                        true (conj table-section)
+                        true (conj actions))]
+          (wrap-container content))))))
 
 (defn users-tables-tabs []
   (r/with-let [active-tab (r/atom :standard)]
