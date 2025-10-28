@@ -7,7 +7,7 @@
  {:web  
   {:target :browser
     :modules {:main {:init-fn acme.web.app/init}}
-    :build-hooks [(dev.build-hooks/run-sass)]
+    :build-hooks [(dev.build-hooks/run-sass {:watch? true :poll-interval-ms 300})]
     :devtools {:watch-dir "public"
                :after-load acme.web.app/reload!}
   }

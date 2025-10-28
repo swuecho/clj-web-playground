@@ -7,27 +7,70 @@
 (def sass-output "public/css/users-table-rc.css")
 
 (defn- file->mtime [path]
-  (when-let [file (io/file path)]
+  (let [file (io/file path)]
     (when (.exists file)
       (.lastModified file))))
 
-(def ^:private last-build (atom nil))
+(defonce last-build (atom nil))
+(defonce watcher-state (atom nil))
+
+(defn- compile-sass! []
+  (let [{:keys [exit err out]} (shell/sh "npx" "sass" "--no-source-map" sass-input sass-output)]
+    (if (zero? exit)
+      (do
+        (reset! last-build (file->mtime sass-input))
+        (println "[sass] compiled" sass-input "->" sass-output))
+      (do
+        (binding [*out* *err*]
+          (println "[sass] compile failed:" err))
+        (throw (ex-info "Sass compilation failed" {:error err :stdout out :exit exit}))))))
+
+(defn- stop-watcher! []
+  (when-let [{:keys [running]} @watcher-state]
+    (reset! running false)
+    (reset! watcher-state nil)
+    (println "[sass] watcher stopped")))
+
+(defn- start-watcher! [{:keys [poll-interval-ms]
+                        :or {poll-interval-ms 300}}]
+  (when-not @watcher-state
+    (println "[sass] watcher started (poll" poll-interval-ms "ms)")
+    (let [running? (atom true)
+          thread (future
+                   (loop []
+                     (when @running?
+                       (Thread/sleep poll-interval-ms)
+                       (when-let [current (file->mtime sass-input)]
+                         (let [compiled @last-build]
+                           (when (or (nil? compiled)
+                                     (> current (or compiled 0)))
+                             (try
+                               (compile-sass!)
+                               (catch Exception e
+                                 (binding [*out* *err*]
+                                   (println "[sass] watcher error" (.getMessage e))))))))
+                       (recur))))]
+      (reset! watcher-state {:thread thread :running running?})
+      (.addShutdownHook (Runtime/getRuntime)
+                        (Thread. stop-watcher!)))))
 
 (defn run-sass
   {:shadow.build/stage :flush
    :shadow.build/mode #{:dev :release}}
-  [build-state & _]
+  [build-state & [opts]]
   (let [in-mtime (file->mtime sass-input)
         out-mtime (file->mtime sass-output)
         last-run @last-build
         should-run? (or (nil? out-mtime)
                         (nil? last-run)
-                        (> in-mtime out-mtime)
-                        (> in-mtime last-run))]
+                        (and in-mtime (> in-mtime (or out-mtime 0)))
+                        (and in-mtime (> in-mtime (or last-run 0))))]
     (when should-run?
-      (let [{:keys [exit err]} (shell/sh "npx" "sass" "--no-source-map" sass-input sass-output)]
-        (reset! last-build (System/currentTimeMillis))
-        (if (zero? exit)
-          (println "[sass] compiled" sass-input "->" sass-output)
-          (throw (ex-info "Sass compilation failed" {:error err})))))
+      (compile-sass!))
+    (let [watch-config (get-in build-state [:shadow.build/config :watch?])
+          watch-mode? (if (some? watch-config)
+                        (true? watch-config)
+                        (:watch? opts true))]
+      (when watch-mode?
+        (start-watcher! opts)))
     build-state))

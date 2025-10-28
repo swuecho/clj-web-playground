@@ -8,13 +8,13 @@
 }
 .users-table-rc__table {
   width: 100%;
-  border: 1px solid #90da28;
+  border: 1px solid #40a632;
   border-radius: 0.75rem;
   box-shadow: 0 1px 2px rgba(221, 142, 64, 0.08);
   overflow: hidden;
 }
 .users-table-rc__header-cell {
-  background: #9209b7;
+  background: #2a262b;
   padding: 0.75rem 0.5rem;
   font-weight: 600;
   border-bottom: 1px solid #ee660b;
@@ -26,9 +26,8 @@
 }
 .users-table-rc__body-cell {
   padding: 0.75rem 0.5rem;
-  border-bottom: 1px solid #90da28;
+  border-bottom: 1px solid #40a632;
   vertical-align: middle;
-  background-color: #90da28;
 }
 .users-table-rc__body-cell--right {
   text-align: right;
