@@ -8,59 +8,58 @@
 (defn users-table []
   (let [users (rf/subscribe [::subs/users])
         loading? (rf/subscribe [::subs/loading?])
-        error (rf/subscribe [::subs/error])]
+        error (rf/subscribe [::subs/error])
+        container-style {:max-width "960px"
+                         :margin "0 auto"
+                         :padding "1.5rem"}
+        table-style {:width "100%"
+                     :border-collapse "separate"
+                     :border-spacing 0
+                     :table-layout "auto"}
+        header-style {:text-align "left"
+                      :border-bottom "1px solid #d1d5db"
+                      :padding "0.75rem 0.5rem"
+                      :font-weight 600
+                      :white-space "nowrap"}
+        cell-style {:border-bottom "1px solid #e5e7eb"
+                    :padding "0.75rem 0.5rem"
+                    :vertical-align "middle"
+                    :line-height 1.4}
+        uuid-cell-style {:font-family "monospace"
+                         :word-break "break-all"}
+        action-cell-style {:padding-right 0}
+        empty-state-style {:margin "2rem 0"
+                           :color "#64748b"}]
     (fn []
-      [:div {:style {:max-width "960px"
-                     :margin "0 auto"
-                     :padding "1.5rem"}}
+      [:div {:style container-style}
        [components/toast-banner]
        [components/add-user-dialog]
        [:h1 {:style {:margin-bottom "1rem"}} "Users"]
        (cond
          @loading? [:p "Loading users..."]
          @error [:p {:style {:color "#b91c1c"}} @error]
-         (empty? @users) [:p "No users found."]
+         (empty? @users) [:p {:style empty-state-style} "No users found."]
          :else
-         [:table {:style {:width "100%"
-                          :border-collapse "collapse"}}
+         [:table {:style table-style}
           [:thead
            [:tr
-            [:th {:style {:text-align "left"
-                          :border-bottom "1px solid #d1d5db"
-                          :padding "0.5rem"}} "UUID"]
-            [:th {:style {:text-align "left"
-                          :border-bottom "1px solid #d1d5db"
-                          :padding "0.5rem"}} "Name"]
-            [:th {:style {:text-align "left"
-                          :border-bottom "1px solid #d1d5db"
-                          :padding "0.5rem"}} "Age"]
-            [:th {:style {:text-align "left"
-                          :border-bottom "1px solid #d1d5db"
-                          :padding "0.5rem"}} "Actions"]]]
+            [:th {:style header-style} "UUID"]
+            [:th {:style header-style} "Name"]
+            [:th {:style header-style} "Age"]
+            [:th {:style (merge header-style {:text-align "right"})} "Actions"]]]
           [:tbody
            (for [{:keys [uuid name age]} @users]
              ^{:key uuid}
              [:tr
-              [:td {:style {:border-bottom "1px solid #e5e7eb"
-                            :padding "0.5rem"
-                            :font-family "monospace"}} uuid]
-              [:td {:style {:border-bottom "1px solid #e5e7eb"
-                            :padding "0.5rem"}} name]
-              [:td {:style {:border-bottom "1px solid #e5e7eb"
-                            :padding "0.5rem"}} age]
-              [:td {:style {:border-bottom "1px solid #e5e7eb"
-                            :padding "0.5rem"}}
+              [:td {:style (merge cell-style uuid-cell-style)} uuid]
+              [:td {:style cell-style} name]
+              [:td {:style cell-style} age]
+              [:td {:style (merge cell-style action-cell-style {:text-align "right"})}
                [:div {:style {:display "flex"
-                               :gap "0.375rem"}}
-                [components/action-button {:label "View"
-                                            :color "#6b7280"
-                                            :on-click #(.log js/console "view" uuid)}]
-                [components/action-button {:label "Edit"
-                                            :color "#2563eb"
-                                            :on-click #(.log js/console "edit" uuid)}]
-                [components/action-button {:label "Delete"
-                                            :color "#dc2626"
-                                            :on-click #(.log js/console "delete" uuid)}]]]])]])
+                              :justify-content "flex-end"
+                              :flex-wrap "wrap"
+                              :gap "0.5rem"}}
+                [components/user-row-actions uuid]]]])]])
        [:div {:style {:margin-top "1.5rem"}}
         [:button {:on-click #(rf/dispatch [::events/fetch-users])
                   :style {:background "#2563eb"
@@ -79,6 +78,5 @@
                           :border-radius "0.375rem"
                           :cursor "pointer"}}
          "Add User"]]])))
-
 (defn main-panel []
   [users-table])
