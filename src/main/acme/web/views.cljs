@@ -101,15 +101,15 @@
                                         :cursor "pointer"}}
                        "Add User"]]
              content (cond-> []
-                        include-aux? (conj [components/toast-banner])
-                        include-aux? (conj [components/add-user-dialog])
-                        title (conj [:h1 {:style {:margin-bottom "1rem"}} title])
-                        true (conj table-section)
-                        true (conj actions))
+                       include-aux? (conj [components/toast-banner])
+                       include-aux? (conj [components/add-user-dialog])
+                       title (conj [:h1 {:style {:margin-bottom "1rem"}} title])
+                       true (conj table-section)
+                       true (conj actions))
              wrapped (into (if wrap?
-                              [:div {:style container-style}]
-                              [:<>])
-                            content)]
+                             [:div {:style container-style}]
+                             [:<>])
+                           content)]
          wrapped)))))
 
 (defn users-table-rc
@@ -124,31 +124,31 @@
          container-style {:max-width "960px"
                           :margin "0 auto"
                           :padding "1.5rem"}
-        table-style {:width "100%"
-                     :box-shadow "0 1px 2px rgba(15, 23, 42, 0.08)"
-                     :border-radius "0.75rem"
-                     :overflow "hidden"
-                     :border "1px solid #e5e7eb"}
-        uuid-cell-style {:font-family "monospace"
-                         :word-break "break-all"
-                         :line-height 1.4}
-        header-style {:background "#f8fafc"
-                      :padding "0.75rem 0.5rem"
-                      :font-weight 600
-                      :border-bottom "1px solid #e2e8f0"
-                      :text-align "left"}
-        cell-style {:padding "0.75rem 0.5rem"
-                    :border-bottom "1px solid #e5e7eb"
-                    :vertical-align "middle"}
-        table-style-js (style->js table-style)
-        header-style-js (style->js header-style)
-        cell-style-js (style->js cell-style)
-        header-style-right-js (style->js (assoc header-style :text-align "right"))
-        cell-style-right-js (style->js (assoc cell-style :text-align "right"))
-        actions-container-style {:display "flex"
-                                 :justify-content "flex-end"
-                                 :flex-wrap "wrap"
-                                 :gap "0.5rem"}
+         table-style {:width "100%"
+                      :box-shadow "0 1px 2px rgba(15, 23, 42, 0.08)"
+                      :border-radius "0.75rem"
+                      :overflow "hidden"
+                      :border "1px solid #e5e7eb"}
+         uuid-cell-style {:font-family "monospace"
+                          :word-break "break-all"
+                          :line-height 1.4}
+         header-style {:background "#f8fafc"
+                       :padding "0.75rem 0.5rem"
+                       :font-weight 600
+                       :border-bottom "1px solid #e2e8f0"
+                       :text-align "left"}
+         cell-style {:padding "0.75rem 0.5rem"
+                     :border-bottom "1px solid #e5e7eb"
+                     :vertical-align "middle"}
+         table-style-js (style->js table-style)
+         header-style-js (style->js header-style)
+         cell-style-js (style->js cell-style)
+         header-style-right-js (style->js (assoc header-style :text-align "right"))
+         cell-style-right-js (style->js (assoc cell-style :text-align "right"))
+         actions-container-style {:display "flex"
+                                  :justify-content "flex-end"
+                                  :flex-wrap "wrap"
+                                  :gap "0.5rem"}
          columns (clj->js
                   [{:title "UUID"
                     :dataIndex "uuid"
@@ -208,13 +208,13 @@
                              @loading? [:p "Loading users..."]
                              @error [:p {:style {:color "#b91c1c"}} @error]
                              (empty? @users) [:p {:style empty-state-style} "No users found."]
-           :else
-           [:> rc-table {:columns columns
-                         :data table-data
-                         :rowKey "uuid"
-                         :style table-style-js
-                         :tableLayout "auto"
-                         :scroll #js {:x "max-content"}}])
+                             :else
+                             [:> rc-table {:columns columns
+                                           :data table-data
+                                           :rowKey "uuid"
+                                           :style table-style-js
+                                           :tableLayout "auto"
+                                           :scroll #js {:x "max-content"}}])
              actions [:div {:style {:margin-top "1.5rem"}}
                       [:button {:on-click #(rf/dispatch [::events/fetch-users])
                                 :style {:background "#2563eb"
@@ -234,11 +234,11 @@
                                         :cursor "pointer"}}
                        "Add User"]]
              content (cond-> []
-                        include-aux? (conj [components/toast-banner])
-                        include-aux? (conj [components/add-user-dialog])
-                        title (conj [:h1 {:style {:margin-bottom "1rem"}} title])
-                        true (conj table-section)
-                        true (conj actions))]
+                       include-aux? (conj [components/toast-banner])
+                       include-aux? (conj [components/add-user-dialog])
+                       title (conj [:h1 {:style {:margin-bottom "1rem"}} title])
+                       true (conj table-section)
+                       true (conj actions))]
          (if wrap?
            (into [:div {:style container-style}] content)
            (into [:<>] content)))))))
@@ -262,10 +262,10 @@
                           :color "#64748b"
                           :outline "none"}
           tab-active-style {:color "#1d4ed8"
-                             :border-bottom "2px solid #2563eb"}
+                            :border-bottom "2px solid #2563eb"}
           tab-inactive-style {:color "#64748b"}
           tabs [{:id :standard :label "Standard Table"}
-                 {:id :rc :label "RC Table"}]
+                {:id :rc :label "RC Table"}]
           active @active-tab]
       [:div {:style container-style}
        [components/toast-banner]
