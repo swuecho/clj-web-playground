@@ -33,7 +33,10 @@
                           :padding "0.5rem"}} "Name"]
             [:th {:style {:text-align "left"
                           :border-bottom "1px solid #d1d5db"
-                          :padding "0.5rem"}} "Age"]]]
+                          :padding "0.5rem"}} "Age"]
+            [:th {:style {:text-align "left"
+                          :border-bottom "1px solid #d1d5db"
+                          :padding "0.5rem"}} "Actions"]]]
           [:tbody
            (for [{:keys [uuid name age]} @users]
              ^{:key uuid}
@@ -44,7 +47,20 @@
               [:td {:style {:border-bottom "1px solid #e5e7eb"
                             :padding "0.5rem"}} name]
               [:td {:style {:border-bottom "1px solid #e5e7eb"
-                            :padding "0.5rem"}} age]])]])
+                            :padding "0.5rem"}} age]
+              [:td {:style {:border-bottom "1px solid #e5e7eb"
+                            :padding "0.5rem"}}
+               [:div {:style {:display "flex"
+                               :gap "0.375rem"}}
+                [components/action-button {:label "View"
+                                            :color "#6b7280"
+                                            :on-click #(.log js/console "view" uuid)}]
+                [components/action-button {:label "Edit"
+                                            :color "#2563eb"
+                                            :on-click #(.log js/console "edit" uuid)}]
+                [components/action-button {:label "Delete"
+                                            :color "#dc2626"
+                                            :on-click #(.log js/console "delete" uuid)}]]]])]])
        [:div {:style {:margin-top "1.5rem"}}
         [:button {:on-click #(rf/dispatch [::events/fetch-users])
                   :style {:background "#2563eb"

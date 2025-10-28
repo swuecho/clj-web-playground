@@ -116,3 +116,15 @@
                              :border-radius "0.375rem"
                              :cursor (if @submitting? "not-allowed" "pointer")}}
             (if @submitting? "Saving..." "Save")]]]]))))
+
+(defn action-button
+  [{:keys [label color on-click disabled?]}]
+  [:button {:on-click on-click
+            :disabled disabled?
+            :style {:background color
+                    :color "white"
+                    :border "none"
+                    :padding "0.25rem 0.5rem"
+                    :border-radius "0.375rem"
+                    :cursor (if disabled? "not-allowed" "pointer")}}
+   label])
