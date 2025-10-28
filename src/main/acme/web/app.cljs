@@ -1,6 +1,7 @@
 (ns acme.web.app
   (:require
    [ajax.core :as ajax]
+   [clojure.string :as str]
    [day8.re-frame.http-fx]
    [re-frame.core :as rf]
    [reagent.dom :as rdom]))
@@ -12,7 +13,10 @@
    :add-user {:visible? false
               :name ""
               :age "0"
-              :submitting? false}})
+              :submitting? false
+              :errors {}}
+   :toast {:current nil
+           :queue []}})
 
 (rf/reg-event-db
  ::initialize
@@ -49,6 +53,16 @@
                           (when status-text (str ": " status-text)))))))
 
 (rf/reg-event-db
+ ::show-toast
+ (fn [db [_ message]]
+   (assoc db :toast {:message message})))
+
+(rf/reg-event-db
+ ::hide-toast
+ (fn [db _]
+   (assoc db :toast nil)))
+
+(rf/reg-event-db
  ::open-add-user-dialog
  (fn [db _]
    (-> db
@@ -56,6 +70,7 @@
        (assoc-in [:add-user :name] "")
        (assoc-in [:add-user :age] "0")
        (assoc-in [:add-user :submitting?] false)
+       (assoc-in [:add-user :errors] {})
        (assoc :error nil))))
 
 (rf/reg-event-db
@@ -63,35 +78,48 @@
  (fn [db _]
    (-> db
        (assoc-in [:add-user :visible?] false)
-       (assoc-in [:add-user :submitting?] false))))
+       (assoc-in [:add-user :submitting?] false)
+       (assoc-in [:add-user :errors] {}))))
 
 (rf/reg-event-db
  ::update-add-user-field
  (fn [db [_ field value]]
-   (assoc-in db [:add-user field] value)))
+   (-> db
+       (assoc-in [:add-user field] value)
+       (update-in [:add-user :errors] dissoc field))))
 
 (rf/reg-event-fx
  ::add-user
  (fn [{:keys [db]} _]
    (let [{:keys [name age]} (:add-user db)
-         parsed-age (let [n (js/parseInt age 10)]
-                      (if (js/isNaN n) 0 n))
-         user {:uuid (str (random-uuid))
-               :name name
-               :age parsed-age}]
-     {:db (-> db
-              (assoc :error nil)
-              (assoc-in [:add-user :submitting?] true))
-      :http-xhrio {:method :post
-                   :uri "/users"
-                   :timeout 8000
-                   :headers {"Content-Type" "application/json"
-                             "Accept" "application/json"}
-                   :params user
-                   :format (ajax/json-request-format)
-                   :response-format (ajax/json-response-format {:keywords? true})
-                   :on-success [::user-added]
-                   :on-failure [::add-user-failed]}})))
+         trimmed-name (str/trim name)
+         age-str (str/trim age)
+         parsed-age (js/parseInt age-str 10)
+         invalid-age? (or (str/blank? age-str)
+                          (js/isNaN parsed-age)
+                          (neg? parsed-age))
+         errors (cond-> {}
+                 (str/blank? trimmed-name) (assoc :name "Name is required")
+                 invalid-age? (assoc :age "Age must be a non-negative number"))]
+     (if (seq errors)
+       {:db (assoc-in db [:add-user :errors] errors)}
+       (let [user {:uuid (str (random-uuid))
+                   :name trimmed-name
+                   :age parsed-age}]
+         {:db (-> db
+                  (assoc :error nil)
+                  (assoc-in [:add-user :errors] {})
+                  (assoc-in [:add-user :submitting?] true))
+          :http-xhrio {:method :post
+                       :uri "/users"
+                       :timeout 8000
+                       :headers {"Content-Type" "application/json"
+                                 "Accept" "application/json"}
+                       :params user
+                       :format (ajax/json-request-format)
+                       :response-format (ajax/json-response-format {:keywords? true})
+                       :on-success [::user-added]
+                       :on-failure [::add-user-failed]}})))))
 
 (rf/reg-event-fx
  ::user-added
@@ -101,8 +129,11 @@
             (assoc-in [:add-user :visible?] false)
             (assoc-in [:add-user :submitting?] false)
             (assoc-in [:add-user :name] "")
-            (assoc-in [:add-user :age] "0"))
-    :dispatch [::fetch-users]}))
+            (assoc-in [:add-user :age] "0")
+            (assoc-in [:add-user :errors] {}))
+     :dispatch-n [[::fetch-users]
+                  [::show-toast "User added successfully"]]
+     :dispatch-later [{:ms 3000 :dispatch [::hide-toast]}]}))
 
 (rf/reg-event-db
  ::add-user-failed
@@ -153,11 +184,48 @@
  (fn [db]
    (get-in db [:add-user :submitting?])))
 
+(rf/reg-sub
+ ::add-user-errors
+ (fn [db]
+   (get-in db [:add-user :errors])))
+
+(rf/reg-sub
+ ::toast
+ (fn [db]
+   (:toast db)))
+
+(defn toast-banner []
+  (let [toast (rf/subscribe [::toast])]
+    (fn []
+      (when-let [{:keys [message]} @toast]
+        [:div {:style {:position "fixed"
+                       :top "1.5rem"
+                       :right "1.5rem"
+                       :background "#16a34a"
+                       :color "white"
+                       :padding "0.75rem 1rem"
+                       :border-radius "0.5rem"
+                       :box-shadow "0 10px 30px rgba(22, 163, 74, 0.35)"
+                       :display "flex"
+                       :align-items "center"
+                       :gap "0.75rem"
+                       :z-index 1100}}
+         [:span message]
+         [:button {:on-click #(rf/dispatch [::hide-toast])
+                   :style {:background "rgba(255,255,255,0.2)"
+                           :border "none"
+                           :color "white"
+                           :padding "0.25rem 0.5rem"
+                           :border-radius "0.375rem"
+                           :cursor "pointer"}}
+          "×"]]))))
+
 (defn add-user-dialog []
   (let [visible? (rf/subscribe [::add-user-visible?])
         name (rf/subscribe [::add-user-name])
         age (rf/subscribe [::add-user-age])
-        submitting? (rf/subscribe [::add-user-submitting?])]
+        submitting? (rf/subscribe [::add-user-submitting?])
+        errors (rf/subscribe [::add-user-errors])]
     (fn []
       (when @visible?
         [:div {:style {:position "fixed"
@@ -188,8 +256,12 @@
                      :value @name
                      :on-change #(rf/dispatch [::update-add-user-field :name (.. % -target -value)])
                      :style {:padding "0.5rem"
-                             :border "1px solid #d1d5db"
-                             :border-radius "0.375rem"}}]]
+                             :border (if (get @errors :name) "1px solid #dc2626" "1px solid #d1d5db")
+                             :border-radius "0.375rem"}}]
+            (when-let [name-error (get @errors :name)]
+              [:span {:style {:color "#dc2626"
+                              :font-size "0.875rem"}}
+               name-error])]
            [:label {:style {:display "flex"
                              :flex-direction "column"
                              :gap "0.25rem"}}
@@ -199,8 +271,12 @@
                      :value @age
                      :on-change #(rf/dispatch [::update-add-user-field :age (.. % -target -value)])
                      :style {:padding "0.5rem"
-                             :border "1px solid #d1d5db"
-                             :border-radius "0.375rem"}}]]]
+                             :border (if (get @errors :age) "1px solid #dc2626" "1px solid #d1d5db")
+                             :border-radius "0.375rem"}}]
+            (when-let [age-error (get @errors :age)]
+              [:span {:style {:color "#dc2626"
+                              :font-size "0.875rem"}}
+               age-error])]]
           [:div {:style {:display "flex"
                          :justify-content "flex-end"
                          :gap "0.75rem"
@@ -231,6 +307,7 @@
       [:div {:style {:max-width "960px"
                      :margin "0 auto"
                      :padding "1.5rem"}}
+       [toast-banner]
        [add-user-dialog]
        [:h1 {:style {:margin-bottom "1rem"}} "Users"]
        (cond
