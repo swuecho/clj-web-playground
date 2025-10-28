@@ -128,3 +128,16 @@
                     :border-radius "0.375rem"
                     :cursor (if disabled? "not-allowed" "pointer")}}
    label])
+
+(defn user-row-actions [uuid]
+  [:div {:style {:display "flex"
+                 :gap "0.375rem"}}
+   [action-button {:label "View"
+                   :color "#6b7280"
+                   :on-click #(js/console.log "view" uuid)}]
+   [action-button {:label "Edit"
+                   :color "#2563eb"
+                   :on-click #(js/console.log "edit" uuid)}]
+   [action-button {:label "Delete"
+                   :color "#dc2626"
+                   :on-click #(js/console.log "delete" uuid)}]])
