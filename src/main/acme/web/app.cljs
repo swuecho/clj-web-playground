@@ -44,23 +44,48 @@
        (assoc :users users)
        (assoc :loading? false))))
 
-(rf/reg-event-db
+(rf/reg-event-fx
  ::fetch-failed
- (fn [db [_ {:keys [status status-text]}]]
-   (-> db
-       (assoc :loading? false)
-       (assoc :error (str "Request failed" (when status (str " (" status ")"))
-                          (when status-text (str ": " status-text)))))))
+ (fn [{:keys [db]} [_ {:keys [status status-text]}]]
+   (let [msg (str "Request failed" (when status (str " (" status ")"))
+                   (when status-text (str ": " status-text)))]
+     {:db (-> db
+              (assoc :loading? false)
+              (assoc :error msg))
+      :dispatch [::enqueue-toast {:message msg :variant :error}]})))
 
-(rf/reg-event-db
- ::show-toast
- (fn [db [_ message]]
-   (assoc db :toast {:message message})))
+(rf/reg-event-fx
+ ::enqueue-toast
+ (fn [{:keys [db]} [_ message]]
+   (let [toast-entry (-> (if (map? message) message {:message message})
+                         (update :variant #(or % :info)))
+         {:keys [current]} (:toast db)]
+     (if current
+       {:db (update-in db [:toast :queue] conj toast-entry)}
+       {:db (-> db
+                (assoc-in [:toast :current] toast-entry)
+                (assoc-in [:toast :queue] []))
+        :dispatch-later [{:ms 3000 :dispatch [::hide-current-toast]}]}))))
 
-(rf/reg-event-db
- ::hide-toast
- (fn [db _]
-   (assoc db :toast nil)))
+(rf/reg-event-fx
+ ::hide-current-toast
+ (fn [{:keys [db]} _]
+   (let [{:keys [queue]} (:toast db)
+         next (first queue)
+         remaining (vec (rest queue))]
+     (if next
+       {:db (-> db
+                (assoc-in [:toast :current] next)
+                (assoc-in [:toast :queue] remaining))
+        :dispatch-later [{:ms 3000 :dispatch [::hide-current-toast]}]}
+       {:db (-> db
+                (assoc-in [:toast :current] nil)
+                (assoc-in [:toast :queue] []))}))))
+
+(rf/reg-event-fx
+ ::dismiss-toast
+ (fn [_ _]
+   {:dispatch [::hide-current-toast]}))
 
 (rf/reg-event-db
  ::open-add-user-dialog
@@ -124,25 +149,27 @@
 (rf/reg-event-fx
  ::user-added
  (fn [{:keys [db]} [_ _response]]
-   {:db (-> db
-            (assoc :loading? false)
-            (assoc-in [:add-user :visible?] false)
-            (assoc-in [:add-user :submitting?] false)
-            (assoc-in [:add-user :name] "")
-            (assoc-in [:add-user :age] "0")
-            (assoc-in [:add-user :errors] {}))
+    {:db (-> db
+             (assoc :loading? false)
+             (assoc-in [:add-user :visible?] false)
+             (assoc-in [:add-user :submitting?] false)
+             (assoc-in [:add-user :name] "")
+             (assoc-in [:add-user :age] "0")
+             (assoc-in [:add-user :errors] {}))
      :dispatch-n [[::fetch-users]
-                  [::show-toast "User added successfully"]]
-     :dispatch-later [{:ms 3000 :dispatch [::hide-toast]}]}))
+                  [::enqueue-toast {:message "User added successfully"
+                                      :variant :success}]]}))
 
-(rf/reg-event-db
+(rf/reg-event-fx
  ::add-user-failed
- (fn [db [_ {:keys [status status-text]}]]
-   (-> db
-       (assoc :loading? false)
-       (assoc-in [:add-user :submitting?] false)
-       (assoc :error (str "Add user failed" (when status (str " (" status ")"))
-                          (when status-text (str ": " status-text)))))))
+ (fn [{:keys [db]} [_ {:keys [status status-text]}]]
+   (let [msg (str "Add user failed" (when status (str " (" status ")"))
+                   (when status-text (str ": " status-text)))]
+     {:db (-> db
+              (assoc :loading? false)
+              (assoc-in [:add-user :submitting?] false)
+              (assoc :error msg))
+      :dispatch [::enqueue-toast {:message msg :variant :error}]})))
 
 (rf/reg-sub
  ::users
@@ -197,28 +224,35 @@
 (defn toast-banner []
   (let [toast (rf/subscribe [::toast])]
     (fn []
-      (when-let [{:keys [message]} @toast]
-        [:div {:style {:position "fixed"
-                       :top "1.5rem"
-                       :right "1.5rem"
-                       :background "#16a34a"
-                       :color "white"
-                       :padding "0.75rem 1rem"
-                       :border-radius "0.5rem"
-                       :box-shadow "0 10px 30px rgba(22, 163, 74, 0.35)"
-                       :display "flex"
-                       :align-items "center"
-                       :gap "0.75rem"
-                       :z-index 1100}}
-         [:span message]
-         [:button {:on-click #(rf/dispatch [::hide-toast])
-                   :style {:background "rgba(255,255,255,0.2)"
-                           :border "none"
-                           :color "white"
-                           :padding "0.25rem 0.5rem"
-                           :border-radius "0.375rem"
-                           :cursor "pointer"}}
-          "×"]]))))
+      (when-let [{:keys [message variant]} (:current @toast)]
+        (let [{:keys [background shadow]} (case variant
+                                            :success {:background "#16a34a"
+                                                      :shadow "0 10px 30px rgba(22, 163, 74, 0.35)"}
+                                            :error {:background "#dc2626"
+                                                    :shadow "0 10px 30px rgba(220, 38, 38, 0.35)"}
+                                            {:background "#2563eb"
+                                             :shadow "0 10px 30px rgba(37, 99, 235, 0.35)"})]
+          [:div {:style {:position "fixed"
+                         :top "1.5rem"
+                         :right "1.5rem"
+                         :background background
+                         :color "white"
+                         :padding "0.75rem 1rem"
+                         :border-radius "0.5rem"
+                         :box-shadow shadow
+                         :display "flex"
+                         :align-items "center"
+                         :gap "0.75rem"
+                         :z-index 1100}}
+           [:span message]
+           [:button {:on-click #(rf/dispatch [::dismiss-toast])
+                     :style {:background "rgba(255,255,255,0.2)"
+                             :border "none"
+                             :color "white"
+                             :padding "0.25rem 0.5rem"
+                             :border-radius "0.375rem"
+                             :cursor "pointer"}}
+            "×"]])))))
 
 (defn add-user-dialog []
   (let [visible? (rf/subscribe [::add-user-visible?])
