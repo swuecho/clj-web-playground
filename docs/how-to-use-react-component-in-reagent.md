@@ -127,4 +127,16 @@ The same interop principles apply across React packages:
 - ✅ `:>` form with JS props (`clj->js`, camelCase styles)
 - ✅ Render functions use `r/as-element` when returning Hiccup
 
+### Optional: Styling with Sass
+
+If you prefer SCSS, add `sass` as a dev dependency and compile to CSS. One convenient setup:
+
+```json
+"scripts": {
+  "sass:watch": "sass --watch public/css/users-table-rc.scss:public/css/users-table-rc.css --no-source-map"
+}
+```
+
+Run `npm run sass:watch` alongside Shadow-CLJS so the compiled stylesheet stays up to date. Point `public/index.html` at the generated `.css` file. Alternatively, you can register a Shadow-CLJS build hook (see `src/dev/dev/build_hooks.clj`) that shells out to `npx sass` whenever the build flushes; add the hook to your build’s `:build-hooks` vector in `shadow-cljs.edn` if you prefer a single watch process.
+
 Once you’re comfortable with these steps, pulling in other React libraries becomes routine—you translate props to JS, leverage Reagent’s subscriptions and components for content, and keep styles/callbacks React-friendly.
