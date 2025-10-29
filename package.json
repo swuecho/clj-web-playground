@@ -2,7 +2,12 @@
   "name": "cljs-001",
   "version": "0.0.1",
   "private": true,
+  "scripts": {
+    "sass:watch": "sass --watch public/css/users-table-rc.scss:public/css/users-table-rc.css --no-source-map",
+    "sass:build": "sass --no-source-map public/css/users-table-rc.scss public/css/users-table-rc.css"
+  },
   "devDependencies": {
+    "sass": "^1.93.2",
     "shadow-cljs": "^3.2.1"
   },
   "dependencies": {

@@ -1,0 +1,87 @@
+$container-width: 960px;
+$spacing-unit: 1.5rem;
+$border-color: #40a632;
+$header-background: #2a262b;
+$header-border: #ee660b;
+$text-color: #475569;
+$error-color: #531cb9;
+$empty-color: #64748b;
+$shadow-color: rgba(221, 142, 64, 0.08);
+
+.users-table-rc {
+  &__container {
+    max-width: $container-width;
+    margin: 0 auto;
+    padding: $spacing-unit;
+  }
+
+  &__heading {
+    margin-bottom: 1rem;
+  }
+
+  &__table {
+    width: 100%;
+    border: 1px solid $border-color;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 2px $shadow-color;
+    overflow: hidden;
+  }
+
+  &__header-cell {
+    background: $header-background;
+    padding: 0.75rem 0.5rem;
+    font-weight: 600;
+    border-bottom: 1px solid $header-border;
+    text-align: left;
+    white-space: nowrap;
+
+    &--right {
+      text-align: right;
+    }
+  }
+
+  &__body-cell {
+    padding: 0.75rem 0.5rem;
+    border-bottom: 1px solid $border-color;
+    vertical-align: middle;
+
+    &--right {
+      text-align: right;
+    }
+  }
+
+  &__uuid {
+    font-family: monospace;
+    word-break: break-all;
+    line-height: 1.4;
+  }
+
+  &__text {
+    line-height: 1.4;
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  &__status {
+    margin: 2rem 0;
+    line-height: 1.5;
+    color: $text-color;
+
+    &--loading {
+      color: $text-color;
+    }
+
+    &--error {
+      color: $error-color;
+    }
+
+    &--empty {
+      color: $empty-color;
+    }
+  }
+}
