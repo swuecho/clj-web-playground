@@ -8,35 +8,17 @@
   (let [toast (rf/subscribe [::subs/toast])]
     (fn []
       (when-let [{:keys [message variant]} (:current @toast)]
-        (let [{:keys [background shadow]}
-              (case variant
-                :success {:background "#16a34a"
-                          :shadow "0 10px 30px rgba(22, 163, 74, 0.35)"}
-                :error {:background "#dc2626"
-                        :shadow "0 10px 30px rgba(220, 38, 38, 0.35)"}
-                {:background "#2563eb"
-                 :shadow "0 10px 30px rgba(37, 99, 235, 0.35)"})]
-          [:div {:style {:position "fixed"
-                         :top "1.5rem"
-                         :right "1.5rem"
-                         :background background
-                         :color "white"
-                         :padding "0.75rem 1rem"
-                         :border-radius "0.5rem"
-                         :box-shadow shadow
-                         :display "flex"
-                         :align-items "center"
-                         :gap "0.75rem"
-                         :z-index 1100}}
-           [:span message]
-           [:button {:on-click #(rf/dispatch [::events/dismiss-toast])
-                     :style {:background "rgba(255,255,255,0.2)"
-                             :border "none"
-                             :color "white"
-                             :padding "0.25rem 0.5rem"
-                             :border-radius "0.375rem"
-                             :cursor "pointer"}}
-            "×"]])))))
+        (let [alert-class (case variant
+                            :success "alert-success"
+                            :error "alert-error"
+                            "alert-info")]
+          [:div {:class "toast toast-end toast-top z-[1200]"}
+           [:div {:class (str "alert " alert-class " flex items-center gap-3")}
+            [:span message]
+            [:button {:type "button"
+                      :class "btn btn-sm btn-ghost"
+                      :on-click #(rf/dispatch [::events/dismiss-toast])}
+             "Dismiss"]]])))))
 
 (defn add-user-dialog []
   (let [visible? (rf/subscribe [::subs/add-user-visible?])
@@ -46,98 +28,80 @@
         errors (rf/subscribe [::subs/add-user-errors])]
     (fn []
       (when @visible?
-        [:div {:style {:position "fixed"
-                       :top 0
-                       :left 0
-                       :width "100vw"
-                       :height "100vh"
-                       :background "rgba(15, 23, 42, 0.5)"
-                       :display "flex"
-                       :align-items "center"
-                       :justify-content "center"
-                       :z-index 1000}}
-         [:div {:style {:background "white"
-                         :border-radius "0.75rem"
-                         :box-shadow "0 10px 40px rgba(15, 23, 42, 0.15)"
-                         :padding "1.5rem"
-                         :width "min(400px, 90vw)"}}
-          [:h2 {:style {:margin-bottom "1rem"
-                        :font-size "1.25rem"}} "Add User"]
-          [:div {:style {:display "flex"
-                         :flex-direction "column"
-                         :gap "0.75rem"}}
-           [:label {:style {:display "flex"
-                             :flex-direction "column"
-                             :gap "0.25rem"}}
-            [:span "Name"]
+        [:div {:class "modal modal-open"}
+         [:div {:class "modal-box space-y-5"}
+          [:div {:class "flex items-start justify-between"}
+           [:h2 {:class "text-xl font-semibold"} "Add User"]
+           [:button {:type "button"
+                     :class "btn btn-sm btn-ghost"
+                     :on-click #(rf/dispatch [::events/close-add-user-dialog])
+                     :disabled @submitting?}
+            "✕"]]
+          [:div {:class "grid gap-4"}
+           [:div {:class "form-control"}
+            [:label {:class "label"}
+             [:span {:class "label-text"} "Name"]]
             [:input {:type "text"
                      :value @name
                      :on-change #(rf/dispatch [::events/update-add-user-field :name (.. % -target -value)])
-                     :style {:padding "0.5rem"
-                             :border (if (get @errors :name) "1px solid #dc2626" "1px solid #d1d5db")
-                             :border-radius "0.375rem"}}]
+                     :class (str "input input-bordered "
+                                 (when (get @errors :name) "input-error"))}]
             (when-let [name-error (get @errors :name)]
-              [:span {:style {:color "#dc2626"
-                              :font-size "0.875rem"}}
-               name-error])]
-           [:label {:style {:display "flex"
-                             :flex-direction "column"
-                             :gap "0.25rem"}}
-            [:span "Age"]
+              [:span {:class "text-error text-sm"} name-error])]
+           [:div {:class "form-control"}
+            [:label {:class "label"}
+             [:span {:class "label-text"} "Age"]]
             [:input {:type "number"
                      :min 0
                      :value @age
                      :on-change #(rf/dispatch [::events/update-add-user-field :age (.. % -target -value)])
-                     :style {:padding "0.5rem"
-                             :border (if (get @errors :age) "1px solid #dc2626" "1px solid #d1d5db")
-                             :border-radius "0.375rem"}}]
+                     :class (str "input input-bordered "
+                                 (when (get @errors :age) "input-error"))}]
             (when-let [age-error (get @errors :age)]
-              [:span {:style {:color "#dc2626"
-                              :font-size "0.875rem"}}
-               age-error])]]
-          [:div {:style {:display "flex"
-                         :justify-content "flex-end"
-                         :gap "0.75rem"
-                         :margin-top "1.5rem"}}
-           [:button {:on-click #(rf/dispatch [::events/close-add-user-dialog])
-                     :disabled @submitting?
-                     :style {:background "transparent"
-                             :border "none"
-                             :color "#4b5563"
-                             :padding "0.5rem 1rem"
-                             :cursor (if @submitting? "not-allowed" "pointer")}}
+              [:span {:class "text-error text-sm"} age-error])]]
+          [:div {:class "modal-action"}
+           [:button {:type "button"
+                     :class "btn btn-ghost"
+                     :on-click #(rf/dispatch [::events/close-add-user-dialog])
+                     :disabled @submitting?}
             "Cancel"]
-           [:button {:on-click #(rf/dispatch [::events/add-user])
-                     :disabled @submitting?
-                     :style {:background (if @submitting? "#86efac" "#16a34a")
-                             :color "white"
-                             :border "none"
-                             :padding "0.5rem 1rem"
-                             :border-radius "0.375rem"
-                             :cursor (if @submitting? "not-allowed" "pointer")}}
-            (if @submitting? "Saving..." "Save")]]]]))))
+           [:button {:type "button"
+                     :class (str "btn btn-primary "
+                                 (when @submitting? "loading"))
+                     :on-click #(rf/dispatch [::events/add-user])
+                     :disabled @submitting?}
+            (if @submitting? "Saving" "Save")]]]
+         [:div {:class "modal-backdrop"}
+          [:button {:type "button"
+                    :class "btn"
+                    :on-click #(rf/dispatch [::events/close-add-user-dialog])
+                    :disabled @submitting?}
+           "Close"]]]))))
 
 (defn action-button
-  [{:keys [label color on-click disabled?]}]
-  [:button {:on-click on-click
-            :disabled disabled?
-            :style {:background color
-                    :color "white"
-                    :border "none"
-                    :padding "0.25rem 0.5rem"
-                    :border-radius "0.375rem"
-                    :cursor (if disabled? "not-allowed" "pointer")}}
-   label])
+  [{:keys [label variant on-click disabled?]}]
+  (let [variant-class (case variant
+                        :primary "btn-primary"
+                        :success "btn-success"
+                        :danger "btn-error"
+                        :ghost "btn-ghost"
+                        :info "btn-info"
+                        :warning "btn-warning"
+                        "btn-neutral")]
+    [:button {:type "button"
+              :on-click on-click
+              :disabled disabled?
+              :class (str "btn btn-sm " variant-class)}
+     label]))
 
 (defn user-row-actions [uuid]
-  [:div {:style {:display "flex"
-                 :gap "0.375rem"}}
+  [:div {:class "flex flex-wrap justify-end gap-2"}
    [action-button {:label "View"
-                   :color "#6b7280"
+                   :variant :ghost
                    :on-click #(js/console.log "view" uuid)}]
    [action-button {:label "Edit"
-                   :color "#2563eb"
+                   :variant :primary
                    :on-click #(js/console.log "edit" uuid)}]
    [action-button {:label "Delete"
-                   :color "#dc2626"
+                   :variant :info
                    :on-click #(js/console.log "delete" uuid)}]])

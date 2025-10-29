@@ -9,6 +9,7 @@
     "tailwind:watch": "tailwindcss -c tailwind.config.js -i src/styles/tailwind.css -o public/css/tailwind.css --watch"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.16",
     "autoprefixer": "^10.4.20",
     "daisyui": "^5.3.10",
     "postcss": "^8.4.47",

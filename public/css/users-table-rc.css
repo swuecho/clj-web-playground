@@ -8,16 +8,16 @@
 }
 .users-table-rc__table {
   width: 100%;
-  border: 1px solid #40a632;
+  border: 1px solid #e2e8f0;
   border-radius: 0.75rem;
-  box-shadow: 0 1px 2px rgba(221, 142, 64, 0.08);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
   overflow: hidden;
 }
 .users-table-rc__header-cell {
-  background: #2a262b;
+  background: #f8fafc;
   padding: 0.75rem 0.5rem;
   font-weight: 600;
-  border-bottom: 1px solid #ee660b;
+  border-bottom: 1px solid #cbd5f5;
   text-align: left;
   white-space: nowrap;
 }
@@ -26,7 +26,7 @@
 }
 .users-table-rc__body-cell {
   padding: 0.75rem 0.5rem;
-  border-bottom: 1px solid #40a632;
+  border-bottom: 1px solid #e2e8f0;
   vertical-align: middle;
 }
 .users-table-rc__body-cell--right {
@@ -49,13 +49,13 @@
 .users-table-rc__status {
   margin: 2rem 0;
   line-height: 1.5;
-  color: #475569;
+  color: #0f172a;
 }
 .users-table-rc__status--loading {
-  color: #475569;
+  color: #0f172a;
 }
 .users-table-rc__status--error {
-  color: #531cb9;
+  color: #dc2626;
 }
 .users-table-rc__status--empty {
   color: #64748b;
