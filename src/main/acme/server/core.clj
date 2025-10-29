@@ -84,7 +84,9 @@
                    (present-map (:query-params request))
                    (assoc :query-params (:query-params request))
                    (and json-body (not (str/blank? json-body)))
-                   (assoc :json-body json-body))]
+                   (assoc :json-body json-body)
+                   (present-map (:body-params request))
+                   (assoc :body-params (:body-params request)))]
     {:method method
      :uri uri
      :details details}))
