@@ -2,9 +2,11 @@
   (:gen-class)
   (:require
    [clojure.string :as str]
+   [muuntaja.core :as m]
+   [reitit.ring :as ring]
+   [reitit.ring.middleware.muuntaja :as muuntaja]
+   [reitit.ring.middleware.parameters :as parameters]
    [ring.adapter.jetty :as jetty]
-   [ring.middleware.json :refer [wrap-json-body wrap-json-response]]
-   [ring.middleware.params :refer [wrap-params]]
    [ring.util.response :as response]))
 
 (def default-users
@@ -63,11 +65,11 @@
         (recur (str (java.util.UUID/randomUUID)))
         (assoc user :uuid candidate)))))
 
-(defn- not-found []
+(defn- not-found [_]
   (-> (response/response {:error "Not found"})
       (response/status 404)))
 
-(defn- users-response []
+(defn- users-response [_]
   (response/response @users))
 
 (defn- add-user-response [{:keys [body-params]}]
@@ -80,23 +82,28 @@
       (-> (response/response {:error message})
           (response/status status)))))
 
-(defn- health-response []
+(defn- health-response [_]
   (response/response {:status "ok"}))
 
-(def api-prefix "/api")
+(def muuntaja-instance m/instance)
 
-(defn handler [{:keys [request-method uri] :as request}]
-  (cond
-    (and (= request-method :get) (= uri (str api-prefix "/health"))) (health-response)
-    (and (= request-method :get) (= uri (str api-prefix "/users"))) (users-response)
-    (and (= request-method :post) (= uri (str api-prefix "/users"))) (add-user-response request)
-    :else (not-found)))
+(def router
+  (ring/router
+   ["/api"
+    ["/health" {:get health-response}]
+    ["/users" {:get users-response
+                :post add-user-response}]]
+   {:data {:muuntaja muuntaja-instance
+           :middleware [parameters/parameters-middleware
+                        muuntaja/format-negotiate-middleware
+                        muuntaja/format-request-middleware
+                        muuntaja/format-response-middleware]}}))
 
 (def app
-  (-> handler
-      wrap-json-response
-      (wrap-json-body {:keywords? true})
-      wrap-params))
+  (ring/ring-handler
+   router
+   (ring/create-default-handler
+    {:not-found not-found})))
 
 (defonce server (atom nil))
 
