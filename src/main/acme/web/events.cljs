@@ -18,7 +18,7 @@
             (assoc :loading? true)
             (assoc :error nil))
     :http-xhrio {:method :get
-                 :uri "/users"
+                 :uri "/api/users"
                  :timeout 8000
                  :headers {"Accept" "application/json"}
                  :response-format (ajax/json-response-format {:keywords? true})
@@ -125,10 +125,9 @@
                   (assoc-in [:add-user :errors] {})
                   (assoc-in [:add-user :submitting?] true))
           :http-xhrio {:method :post
-                       :uri "/users"
+                       :uri "/api/users"
                        :timeout 8000
-                       :headers {"Content-Type" "application/json"
-                                 "Accept" "application/json"}
+                       :headers {"Accept" "application/json"}
                        :params user
                        :format (ajax/json-request-format)
                        :response-format (ajax/json-response-format {:keywords? true})
@@ -159,4 +158,165 @@
               (assoc :loading? false)
               (assoc-in [:add-user :submitting?] false)
               (assoc :error msg))
+      :dispatch [::enqueue-toast {:message msg :variant :error}]})))
+
+(rf/reg-event-fx
+ ::open-edit-user-dialog
+ (fn [{:keys [db]} [_ uuid]]
+   (if-let [user (some #(when (= uuid (:uuid %)) %) (:users db))]
+     {:db (-> db
+              (assoc-in [:edit-user :visible?] true)
+              (assoc-in [:edit-user :uuid] (:uuid user))
+              (assoc-in [:edit-user :name] (or (:name user) ""))
+              (assoc-in [:edit-user :age] (if (some? (:age user)) (str (:age user)) ""))
+              (assoc-in [:edit-user :errors] {})
+              (assoc-in [:edit-user :submitting?] false)
+              (assoc-in [:edit-user :initial] {:name (:name user)
+                                               :age (:age user)}))}
+     {:db db
+      :dispatch [::enqueue-toast {:message "User not found"
+                                  :variant :error}]})))
+
+(rf/reg-event-db
+ ::close-edit-user-dialog
+ (fn [db _]
+   (-> db
+       (assoc-in [:edit-user :visible?] false)
+       (assoc-in [:edit-user :uuid] nil)
+       (assoc-in [:edit-user :name] "")
+       (assoc-in [:edit-user :age] "0")
+       (assoc-in [:edit-user :errors] {})
+       (assoc-in [:edit-user :submitting?] false)
+       (assoc-in [:edit-user :initial] {:name ""
+                                        :age 0}))))
+
+(rf/reg-event-db
+ ::update-edit-user-field
+ (fn [db [_ field value]]
+   (-> db
+       (assoc-in [:edit-user field] value)
+       (update-in [:edit-user :errors] dissoc field))))
+
+(defn- parse-age [age-str]
+  (let [trimmed (str/trim (or age-str ""))]
+    (when-not (str/blank? trimmed)
+      (let [parsed (js/parseInt trimmed 10)]
+        (when-not (js/isNaN parsed)
+          parsed)))))
+
+(rf/reg-event-fx
+ ::update-user
+ (fn [{:keys [db]} _]
+   (let [{:keys [uuid name age initial]} (:edit-user db)
+         uuid (some-> uuid str/trim)
+         raw-name (or name "")
+         trimmed-name (str/trim raw-name)
+         age-str (str/trim (or age ""))
+         parsed-age (parse-age age-str)
+         initial-name (or (:name initial) "")
+         initial-age (:age initial)
+         name-changed? (not= trimmed-name initial-name)
+         name-invalid? (and name-changed?
+                            (str/blank? trimmed-name))
+         age-provided? (not (str/blank? age-str))
+         age-invalid? (and age-provided?
+                           (or (nil? parsed-age)
+                               (neg? parsed-age)))
+         age-changed? (and age-provided?
+                           (not age-invalid?)
+                           (not= parsed-age initial-age))
+         updates (cond-> {}
+                   (and name-changed? (not name-invalid?)) (assoc :name trimmed-name)
+                   age-changed? (assoc :age parsed-age))
+         errors (cond-> {}
+                  name-invalid? (assoc :name "Name is required")
+                  age-invalid? (assoc :age "Age must be a non-negative number"))]
+     (cond
+       (str/blank? uuid)
+       {:dispatch [::enqueue-toast {:message "User id missing"
+                                    :variant :error}]}
+
+       (seq errors)
+       {:db (assoc-in db [:edit-user :errors] errors)}
+
+       (empty? updates)
+       {:dispatch [::enqueue-toast {:message "No changes to save"
+                                    :variant :info}]}
+
+       :else
+       {:db (-> db
+                (assoc :error nil)
+                (assoc-in [:edit-user :errors] {})
+                (assoc-in [:edit-user :submitting?] true))
+        :http-xhrio {:method :patch
+                     :uri (str "/api/users/" uuid)
+                     :timeout 8000
+                     :headers {"Accept" "application/json"}
+                     :params updates
+                     :format (ajax/json-request-format)
+                     :response-format (ajax/json-response-format {:keywords? true})
+                     :on-success [::user-updated uuid]
+                     :on-failure [::update-user-failed uuid updates]}}))))
+
+(rf/reg-event-fx
+ ::user-updated
+ (fn [{:keys [db]} [_ uuid _response]]
+   {:db (-> db
+            (assoc-in [:edit-user :visible?] false)
+            (assoc-in [:edit-user :uuid] nil)
+            (assoc-in [:edit-user :name] "")
+            (assoc-in [:edit-user :age] "0")
+            (assoc-in [:edit-user :errors] {})
+            (assoc-in [:edit-user :submitting?] false)
+            (assoc-in [:edit-user :initial] {:name ""
+                                             :age 0}))
+    :dispatch-n [[::fetch-users]
+                 [::enqueue-toast {:message "User updated"
+                                    :variant :success}]]}))
+
+(rf/reg-event-fx
+ ::update-user-failed
+ (fn [{:keys [db]} [_ uuid _updates {:keys [status status-text]}]]
+   (let [msg (str "Update failed"
+                  (when status (str " (" status ")"))
+                  (when status-text (str ": " status-text)))]
+     {:db (-> db
+              (assoc :error msg)
+              (assoc-in [:edit-user :submitting?] false))
+      :dispatch [::enqueue-toast {:message msg :variant :error}]})))
+
+(rf/reg-event-fx
+ ::delete-user
+ (fn [{:keys [db]} [_ uuid]]
+   (let [uuid (some-> uuid str/trim)]
+     (if (str/blank? uuid)
+       {:dispatch [::enqueue-toast {:message "User id missing"
+                                    :variant :error}]}
+       {:db (update db :pending-deletes conj uuid)
+        :http-xhrio {:method :delete
+                     :uri (str "/api/users/" uuid)
+                     :timeout 8000
+                     :headers {"Accept" "application/json"}
+                     :json-params {}
+                     :response-format (ajax/json-response-format {:keywords? true})
+                     :on-success [::user-deleted uuid]
+                     :on-failure [::delete-user-failed uuid]}}))))
+
+(rf/reg-event-fx
+ ::user-deleted
+ (fn [{:keys [db]} [_ uuid _response]]
+   {:db (update db :pending-deletes disj uuid)
+    :dispatch-n [[::fetch-users]
+                 [::enqueue-toast {:message "User deleted"
+                                    :variant :success}]]}))
+
+(rf/reg-event-fx
+ ::delete-user-failed
+ (fn [{:keys [db]} [_ uuid {:keys [status status-text]}]]
+   (let [msg (str "Delete failed"
+                  (when status (str " (" status ")"))
+                  (when status-text (str ": " status-text)))]
+     {:db (-> db
+              (assoc :error msg)
+              (update :pending-deletes disj uuid))
       :dispatch [::enqueue-toast {:message msg :variant :error}]})))

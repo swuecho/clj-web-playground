@@ -59,6 +59,7 @@
               content (cond-> []
                         include-aux? (conj [components/toast-banner])
                         include-aux? (conj [components/add-user-dialog])
+                        include-aux? (conj [components/edit-user-dialog])
                         title (conj [:h1 {:class "text-2xl font-semibold"} title])
                         true (conj table-section)
                         true (conj actions))]
@@ -158,8 +159,9 @@
                                :on-click #(rf/dispatch [::events/open-add-user-dialog])}
                       "Add User"]]
             content (cond-> []
-                      include-aux? (conj [components/toast-banner])
-                      include-aux? (conj [components/add-user-dialog])
+                       include-aux? (conj [components/toast-banner])
+                       include-aux? (conj [components/add-user-dialog])
+                       include-aux? (conj [components/edit-user-dialog])
                       title (conj [:h1 {:class "users-table-rc__heading text-2xl font-semibold"} title])
                        true (conj table-section)
                        true (conj actions))]
