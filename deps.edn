@@ -10,7 +10,12 @@
         re-com/re-com {:mvn/version "2.28.2"}
         day8.re-frame/http-fx {:mvn/version "0.2.4"}
         com.andrewmcveigh/cljs-time {:mvn/version "0.5.2"}
-        cljs-ajax/cljs-ajax {:mvn/version "0.8.4"}}
+        cljs-ajax/cljs-ajax {:mvn/version "0.8.4"}
+        ring/ring-core {:mvn/version "1.12.2"}
+        ring/ring-jetty-adapter {:mvn/version "1.12.2"}
+        ring/ring-json {:mvn/version "0.5.1"}
+        metosin/reitit {:mvn/version "0.7.0"}
+        metosin/muuntaja {:mvn/version "0.6.12"}}
  :aliases
- {:cljs
-  {:extra-deps {thheller/shadow-cljs {:mvn/version "3.2.1"}}}}}
+ {:cljs {:extra-deps {thheller/shadow-cljs {:mvn/version "3.2.1"}}}
+  :backend {:main-opts ["-m" "acme.server.core"]}}}

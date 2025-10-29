@@ -18,7 +18,7 @@
             (assoc :loading? true)
             (assoc :error nil))
     :http-xhrio {:method :get
-                 :uri "/users"
+                 :uri "/api/users"
                  :timeout 8000
                  :headers {"Accept" "application/json"}
                  :response-format (ajax/json-response-format {:keywords? true})
@@ -125,7 +125,7 @@
                   (assoc-in [:add-user :errors] {})
                   (assoc-in [:add-user :submitting?] true))
           :http-xhrio {:method :post
-                       :uri "/users"
+                       :uri "/api/users"
                        :timeout 8000
                        :headers {"Content-Type" "application/json"
                                  "Accept" "application/json"}
