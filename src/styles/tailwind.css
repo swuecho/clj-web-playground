@@ -52,3 +52,70 @@
     0 4px 3px -2px color-mix(in oklab, var(--btn-bg) calc(var(--depth) * 30%), #0000);
   --btn-noise: var(--fx-noise);
 }
+
+@layer base {
+  :root,
+  [data-theme="kafka"] {
+    color-scheme: light;
+    --color-base-100: #f9fafa;
+    --color-base-200: #e3e6e8;
+    --color-base-300: #c7ced1;
+    --color-base-content: #171a1c;
+    --color-primary: #4c4cff;
+    --color-primary-content: #f9fafa;
+    --color-secondary: #7e7ef1;
+    --color-secondary-content: #171a1c;
+    --color-accent: #33cc66;
+    --color-accent-content: #062812;
+    --color-neutral: #2f3639;
+    --color-neutral-content: #e3e6e8;
+    --color-info: #64b5f6;
+    --color-info-content: #0b1f33;
+    --color-success: #33cc66;
+    --color-success-content: #062812;
+    --color-warning: #ffdd57;
+    --color-warning-content: #171a1c;
+    --color-error: #cf1717;
+    --color-error-content: #f9fafa;
+    --radius-selector: 0.5rem;
+    --radius-field: 0.375rem;
+    --radius-box: 0.75rem;
+    --size-selector: 0.25rem;
+    --size-field: 0.25rem;
+    --border: 1px;
+    --depth: 1;
+    --noise: 0;
+  }
+
+  [data-theme="kafka-dark"] {
+    color-scheme: dark;
+    --color-base-100: #171a1c;
+    --color-base-200: #1e2224;
+    --color-base-300: #2f3639;
+    --color-base-content: #f1f2f3;
+    --color-primary: #7e7ef1;
+    --color-primary-content: #f9fafa;
+    --color-secondary: #5b67e3;
+    --color-secondary-content: #f9fafa;
+    --color-accent: #5cd685;
+    --color-accent-content: #062812;
+    --color-neutral: #1e2224;
+    --color-neutral-content: #f1f2f3;
+    --color-info: #64b5f6;
+    --color-info-content: #0b1f33;
+    --color-success: #33cc66;
+    --color-success-content: #062812;
+    --color-warning: #ffdd57;
+    --color-warning-content: #171a1c;
+    --color-error: #cf1717;
+    --color-error-content: #f9fafa;
+    --radius-selector: 0.5rem;
+    --radius-field: 0.375rem;
+    --radius-box: 0.75rem;
+    --size-selector: 0.25rem;
+    --size-field: 0.25rem;
+    --border: 1px;
+    --depth: 1;
+    --noise: 0;
+  }
+}

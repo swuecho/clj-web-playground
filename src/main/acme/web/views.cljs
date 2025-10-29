@@ -64,7 +64,7 @@
          (into (if wrap?
                  [:div {:class container-classes}]
                  [:div {:class "space-y-6"}])
-               content)))))
+               content))))))
 
 (defn users-table-rc
   ([] (users-table-rc {}))
