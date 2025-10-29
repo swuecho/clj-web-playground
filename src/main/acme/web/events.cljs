@@ -127,8 +127,7 @@
           :http-xhrio {:method :post
                        :uri "/api/users"
                        :timeout 8000
-                       :headers {"Content-Type" "application/json"
-                                 "Accept" "application/json"}
+                       :headers {"Accept" "application/json"}
                        :params user
                        :format (ajax/json-request-format)
                        :response-format (ajax/json-response-format {:keywords? true})
@@ -252,8 +251,7 @@
         :http-xhrio {:method :patch
                      :uri (str "/api/users/" uuid)
                      :timeout 8000
-                     :headers {"Content-Type" "application/json"
-                               "Accept" "application/json"}
+                     :headers {"Accept" "application/json"}
                      :params updates
                      :format (ajax/json-request-format)
                      :response-format (ajax/json-response-format {:keywords? true})
@@ -299,6 +297,7 @@
                      :uri (str "/api/users/" uuid)
                      :timeout 8000
                      :headers {"Accept" "application/json"}
+                     :json-params {}
                      :response-format (ajax/json-response-format {:keywords? true})
                      :on-success [::user-deleted uuid]
                      :on-failure [::delete-user-failed uuid]}}))))

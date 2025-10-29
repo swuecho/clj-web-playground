@@ -15,7 +15,9 @@
 
 (def default-database-url "postgresql://hwu:using555@192.168.0.135:5432/hwu")
 
-(def muuntaja-instance m/instance)
+(def muuntaja-instance
+  (m/create
+   (assoc m/default-options :default-format "application/json")))
 
 (def json-format "application/json")
 
