@@ -6,6 +6,10 @@
 (def sass-input "public/css/users-table-rc.scss")
 (def sass-output "public/css/users-table-rc.css")
 
+(def tailwind-input "src/styles/tailwind.css")
+(def tailwind-output "public/css/tailwind.css")
+(def tailwind-config "tailwind.config.js")
+
 (defn- file->mtime [path]
   (let [file (io/file path)]
     (when (.exists file)
@@ -24,6 +28,22 @@
         (binding [*out* *err*]
           (println "[sass] compile failed:" err))
         (throw (ex-info "Sass compilation failed" {:error err :stdout out :exit exit}))))))
+
+(defn- compile-tailwind! [mode]
+  (let [args (cond-> ["npx" "tailwindcss"
+                      "-i" tailwind-input
+                      "-o" tailwind-output
+                      "-c" tailwind-config]
+               (= mode :release) (conj "--minify"))
+        {:keys [exit err out]} (apply shell/sh args)]
+    (if (zero? exit)
+      (if (= mode :release)
+        (println "[tailwind] compiled" tailwind-input "->" tailwind-output "(minified)")
+        (println "[tailwind] compiled" tailwind-input "->" tailwind-output))
+      (do
+        (binding [*out* *err*]
+          (println "[tailwind] compile failed:" err))
+        (throw (ex-info "Tailwind compilation failed" {:error err :stdout out :exit exit}))))))
 
 (defn- stop-watcher! []
   (when-let [{:keys [running]} @watcher-state]
@@ -58,7 +78,8 @@
   {:shadow.build/stage :flush
    :shadow.build/mode #{:dev :release}}
   [build-state & [opts]]
-  (let [in-mtime (file->mtime sass-input)
+  (let [mode (or (:shadow.build/mode build-state) :dev)
+        in-mtime (file->mtime sass-input)
         out-mtime (file->mtime sass-output)
         last-run @last-build
         should-run? (or (nil? out-mtime)
@@ -67,6 +88,7 @@
                         (and in-mtime (> in-mtime (or last-run 0))))]
     (when should-run?
       (compile-sass!))
+    (compile-tailwind! mode)
     (let [watch-config (get-in build-state [:shadow.build/config :watch?])
           watch-mode? (if (some? watch-config)
                         (true? watch-config)
