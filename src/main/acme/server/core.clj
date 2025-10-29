@@ -8,13 +8,26 @@
    [reitit.ring :as ring]
    [reitit.ring.middleware.muuntaja :as muuntaja]
    [reitit.ring.middleware.parameters :as parameters]
-   [ring.adapter.jetty :as jetty]
-   [ring.util.response :as response])
+   [ring.adapter.jetty :as jetty])
   (:import
    (java.net URI)
    (java.sql SQLException)))
 
 (def default-database-url "postgresql://hwu:using555@192.168.0.135:5432/hwu")
+
+(def muuntaja-instance m/instance)
+
+(def json-format "application/json")
+
+(def json-content-type (str json-format "; charset=utf-8"))
+
+(defn- respond-json
+  ([data]
+   (respond-json data 200))
+  ([data status]
+   {:status status
+    :headers {"Content-Type" json-content-type}
+    :body (m/encode muuntaja-instance json-format data)}))
 
 (defn- normalize-db-url [url]
   (if (str/starts-with? url "jdbc:")
@@ -118,14 +131,13 @@
         (assoc user :uuid candidate)))))
 
 (defn- not-found [_]
-  (-> (response/response {:error "Not found"})
-      (response/status 404)))
+  (respond-json {:error "Not found"} 404))
 
 (defn- users-response [_]
   (let [users (jdbc/execute! (ds)
                              ["select uuid, name, age from \"UserTable\" order by name asc"]
                              result-opts)]
-    (response/response users)))
+    (respond-json users)))
 
 (defn- add-user-response [{:keys [body-params]}]
   (let [{:keys [status message user]} (validate-user body-params)]
@@ -139,15 +151,12 @@
                                               (:name sanitized)
                                               (:age sanitized)]
                                              result-opts))]
-            (-> (response/response created)
-                (response/status status)))
+            (respond-json created status))
           (catch SQLException ex
             (if (= "23505" (.getSQLState ex))
-              (-> (response/response {:error "A user with that uuid already exists"})
-                  (response/status 409))
+              (respond-json {:error "A user with that uuid already exists"} 409)
               (throw ex)))))
-      (-> (response/response {:error message})
-          (response/status status)))))
+      (respond-json {:error message} status))))
 
 (defn- build-update-sql [{:keys [name age]}]
   (let [set-fragments (cond-> []
@@ -164,8 +173,7 @@
   (let [uuid (:uuid path-params)
         uuid (some-> uuid str/trim)]
     (if (str/blank? uuid)
-      (-> (response/response {:error "User uuid is required"})
-          (response/status 400))
+      (respond-json {:error "User uuid is required"} 400)
       (let [{:keys [status message updates]} (validate-update body-params)]
         (if updates
           (if-let [{:keys [sql params]} (build-update-sql updates)]
@@ -176,49 +184,44 @@
                                                     (into [sql] statement)
                                                     result-opts))]
                   (if updated
-                    (-> (response/response updated)
-                        (response/status status))
+                    (respond-json updated status)
                     (not-found nil)))
                 (catch SQLException ex
                   (throw ex))))
-            (-> (response/response {:error "Supply at least one field to update"})
-                (response/status 400)))
-          (-> (response/response {:error message})
-              (response/status status)))))))
+            (respond-json {:error "Supply at least one field to update"} 400))
+          (respond-json {:error message} status))))))
 
 (defn- delete-user-response [{:keys [path-params]}]
   (let [uuid (:uuid path-params)
         uuid (some-> uuid str/trim)]
     (if (str/blank? uuid)
-      (-> (response/response {:error "User uuid is required"})
-          (response/status 400))
+      (respond-json {:error "User uuid is required"} 400)
       (let [deleted (jdbc/with-transaction [tx (ds)]
                        (jdbc/execute-one! tx
                                           ["delete from \"UserTable\" where uuid = ? returning uuid, name, age" uuid]
                                           result-opts))]
         (if deleted
-          (response/response deleted)
+          (respond-json deleted)
           (not-found nil))))))
 
 (defn- health-response [_]
   (try
     (jdbc/execute-one! (ds) ["select 1 as ok"] result-opts)
-    (response/response {:status "ok"})
+    (respond-json {:status "ok"})
     (catch Exception _
-      (-> (response/response {:status "error"})
-          (response/status 500)))))
+      (respond-json {:status "error"} 500))))
 
-(def muuntaja-instance m/instance)
+(def routes
+  [["/api/health" {:get health-response}]
+   ["/api/users" {:get users-response
+                   :post add-user-response}]
+   ["/api/users/:uuid" {:put update-user-response
+                         :patch update-user-response
+                         :delete delete-user-response}]])
 
 (def router
   (ring/router
-   ["/api"
-    ["/health" {:get health-response}]
-    ["/users" {:get users-response
-                :post add-user-response}
-     ["/:uuid" {:put update-user-response
-                 :patch update-user-response
-                 :delete delete-user-response}]]]
+   routes
    {:data {:muuntaja muuntaja-instance
            :middleware [parameters/parameters-middleware
                         muuntaja/format-negotiate-middleware
@@ -228,8 +231,10 @@
 (def app
   (ring/ring-handler
    router
-   (ring/create-default-handler
-    {:not-found not-found})))
+   (ring/routes
+    (ring/redirect-trailing-slash-handler)
+    (ring/create-default-handler
+     {:not-found not-found}))))
 
 (defonce server (atom nil))
 
