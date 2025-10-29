@@ -1,5 +1,6 @@
 (ns acme.web.views
   (:require
+   [clojure.string :as str]
    [reagent.core :as r]
    [re-frame.core :as rf]
    [acme.web.events :as events]
@@ -262,14 +263,21 @@
       [:div {:class "mx-auto max-w-5xl space-y-6 p-6"}
        [components/toast-banner]
        [components/add-user-dialog]
-       [:div {:class "tabs tabs-boxed"}
+       [:div {:class "tabs tabs-boxed flex gap-3"}
         (for [{:keys [id label]} tabs]
           ^{:key (name id)}
-          [:button {:type "button"
-                    :class (str "tab text-sm font-semibold "
-                                (when (= id active) "tab-active"))
-                    :on-click #(reset! active-tab id)}
-           label])]
+          (let [active? (= id active)
+                tab-classes (->> ["tab text-sm font-semibold px-5 py-2 transition-colors duration-150"
+                                   (when active? "tab-active bg-primary text-primary-content shadow-sm")
+                                   (when-not active? "text-base-content/70 hover:text-base-content hover:bg-base-200")]
+                                  (remove nil?)
+                                  (str/join " "))]
+            [:button {:type "button"
+                      :class tab-classes
+                      :aria-pressed active?
+                      :aria-current (when active? "page")
+                      :on-click #(reset! active-tab id)}
+             label]))]
        [:div {:class "space-y-6"}
         (case active
           :daisy [daisy-ui-showcase]
