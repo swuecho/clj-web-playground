@@ -58,8 +58,7 @@
                      :class (str "input input-bordered "
                                  (when (get @errors :age) "input-error"))}]
             (when-let [age-error (get @errors :age)]
-              [:span {:class "text-error text-sm"} age-error])]
-           ]
+              [:span {:class "text-error text-sm"} age-error])]]
           [:div {:class "modal-action"}
            [:button {:type "button"
                      :class "btn btn-ghost"
@@ -104,5 +103,5 @@
                    :variant :primary
                    :on-click #(js/console.log "edit" uuid)}]
    [action-button {:label "Delete"
-                   :variant :danger
+                   :variant :info
                    :on-click #(js/console.log "delete" uuid)}]])
