@@ -2,6 +2,7 @@
   (:gen-class)
   (:require
    [clojure.string :as str]
+   [clojure.walk :as walk]
    [muuntaja.core :as m]
    [next.jdbc :as jdbc]
    [next.jdbc.result-set :as rs]
@@ -76,23 +77,49 @@
             nil))))
     :else nil))
 
-(defn- user-exists? [uuid]
-  (some? (jdbc/execute-one! (ds)
-                            ["select 1 from \"UserTable\" where uuid = ? limit 1" uuid]
-                            result-opts)))
+(defn- ->uuid [value]
+  (cond
+    (instance? java.util.UUID value) value
+    (string? value)
+    (let [trimmed (str/trim value)]
+      (when-not (str/blank? trimmed)
+        (try
+          (java.util.UUID/fromString trimmed)
+          (catch IllegalArgumentException _
+            nil))))
+    :else nil))
 
-(defn- validate-user [{:keys [uuid name age]}]
-  (let [trimmed-name (some-> name str/trim)
+(defn- user-exists? [uuid]
+  (if-let [uuid (->uuid uuid)]
+    (some? (jdbc/execute-one! (ds)
+                              ["select 1 from \"UserTable\" where uuid = ? limit 1" uuid]
+                              result-opts))
+    false))
+
+(defn- normalize-request-map [params]
+  (cond
+    (map? params) (walk/keywordize-keys params)
+    (nil? params) {}
+    :else {}))
+
+(defn- validate-user [input]
+  (let [params (normalize-request-map input)
+        {:keys [uuid name age]} params
+        trimmed-name (some-> name str/trim)
         parsed-age (normalize-age age)
-        supplied-uuid (some-> uuid str not-empty)
-        duplicate? (when supplied-uuid
-                     (user-exists? supplied-uuid))]
+        supplied-uuid (some-> uuid str str/trim not-empty)
+        parsed-uuid (some-> supplied-uuid ->uuid)
+        duplicate? (when parsed-uuid
+                     (user-exists? parsed-uuid))]
     (cond
       (or (nil? trimmed-name) (str/blank? trimmed-name))
       {:status 400 :message "Name is required"}
 
       (or (nil? parsed-age) (neg? parsed-age))
       {:status 400 :message "Age must be a non-negative integer"}
+
+      (and supplied-uuid (nil? parsed-uuid))
+      {:status 400 :message "Invalid uuid format"}
 
       duplicate?
       {:status 409 :message "A user with that uuid already exists"}
@@ -103,8 +130,10 @@
               :name trimmed-name
               :age parsed-age}})))
 
-(defn- validate-update [{:keys [name age] :as params}]
-  (let [name-present? (contains? params :name)
+(defn- validate-update [input]
+  (let [params (normalize-request-map input)
+        {:keys [name age]} params
+        name-present? (contains? params :name)
         age-present? (contains? params :age)
         trimmed-name (when name-present? (some-> name str/trim))
         parsed-age (when age-present? (normalize-age age))]
@@ -173,13 +202,20 @@
 
 (defn- update-user-response [{:keys [path-params body-params]}]
   (let [uuid (:uuid path-params)
-        uuid (some-> uuid str/trim)]
-    (if (str/blank? uuid)
+        uuid (some-> uuid str/trim)
+        uuid-param (->uuid uuid)]
+    (cond
+      (str/blank? uuid)
       (respond-json {:error "User uuid is required"} 400)
+
+      (nil? uuid-param)
+      (respond-json {:error "Invalid uuid format"} 400)
+
+      :else
       (let [{:keys [status message updates]} (validate-update body-params)]
         (if updates
           (if-let [{:keys [sql params]} (build-update-sql updates)]
-            (let [statement (conj params uuid)]
+            (let [statement (conj params uuid-param)]
               (try
                 (let [updated (jdbc/with-transaction [tx (ds)]
                                  (jdbc/execute-one! tx
@@ -195,12 +231,19 @@
 
 (defn- delete-user-response [{:keys [path-params]}]
   (let [uuid (:uuid path-params)
-        uuid (some-> uuid str/trim)]
-    (if (str/blank? uuid)
+        uuid (some-> uuid str/trim)
+        uuid-param (->uuid uuid)]
+    (cond
+      (str/blank? uuid)
       (respond-json {:error "User uuid is required"} 400)
+
+      (nil? uuid-param)
+      (respond-json {:error "Invalid uuid format"} 400)
+
+      :else
       (let [deleted (jdbc/with-transaction [tx (ds)]
                        (jdbc/execute-one! tx
-                                          ["delete from \"UserTable\" where uuid = ? returning uuid, name, age" uuid]
+                                          ["delete from \"UserTable\" where uuid = ? returning uuid, name, age" uuid-param]
                                           result-opts))]
         (if deleted
           (respond-json deleted)
