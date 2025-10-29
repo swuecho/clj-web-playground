@@ -160,24 +160,24 @@
                                      (-> user
                                          (assoc :key (:uuid user)))))
                              (clj->js))
-              table-section (cond
-                              @loading? [:p {:class "users-table-rc__status users-table-rc__status--loading"}
-                                         "Loading users..."]
-                              @error [:p {:class "users-table-rc__status users-table-rc__status--error"}
-                                      @error]
-                              (empty? @users) [:p {:class "users-table-rc__status users-table-rc__status--empty"}
-                                               "No users found."]
-                              :else
-                              [:> rc-table {:columns columns
-                                            :data table-data
-                                            :rowKey "uuid"
-                                            :className "users-table-rc__table"
-                                            :tableLayout "auto"
-                                            :scroll #js {:x "max-content"}}])
-              actions [:div {:style {:margin-top "1.5rem"}}
-                       [:button {:on-click #(rf/dispatch [::events/fetch-users])
-                                 :style {:background "#2563eb"
-                                         :color "white"
+             table-section (cond
+                             @loading? [:p {:class "users-table-rc__status users-table-rc__status--loading"}
+                                        "Loading users..."]
+                             @error [:p {:class "users-table-rc__status users-table-rc__status--error"}
+                                     @error]
+                             (empty? @users) [:p {:class "users-table-rc__status users-table-rc__status--empty"}
+                                              "No users found."]
+                             :else
+                             [:> rc-table {:columns columns
+                                           :data table-data
+                                           :rowKey "uuid"
+                                           :className "users-table-rc__table"
+                                           :tableLayout "auto"
+                                           :scroll #js {:x "max-content"}}])
+             actions [:div {:style {:margin-top "1.5rem"}}
+                      [:button {:on-click #(rf/dispatch [::events/fetch-users])
+                                :style {:background "#2563eb"
+                                        :color "white"
                                         :border "none"
                                         :padding "0.5rem 1rem"
                                         :border-radius "0.375rem"
@@ -193,15 +193,37 @@
                                         :cursor "pointer"}}
                        "Add User"]]
              content (cond-> []
-                        include-aux? (conj [components/toast-banner])
-                        include-aux? (conj [components/add-user-dialog])
-                        title (conj [:h1 {:class "users-table-rc__heading"} title])
-                        true (conj table-section)
-                        true (conj actions))]
-          (wrap-container content))))))
+                       include-aux? (conj [components/toast-banner])
+                       include-aux? (conj [components/add-user-dialog])
+                       title (conj [:h1 {:class "users-table-rc__heading"} title])
+                       true (conj table-section)
+                       true (conj actions))]
+         (wrap-container content))))))
+
+(defn daisy-ui-button-showcase []
+  [:div {:class "flex flex-wrap gap-3"}
+   [:button {:type "button" :class "btn"} "Default"]
+   [:button {:type "button" :class "btn btn-primary"} "Primary"]
+   [:button {:type "button" :class "btn btn-secondary"} "Secondary"]
+   [:button {:type "button" :class "btn btn-accent"} "Accent"]
+   [:button {:type "button" :class "btn btn-success"} "Success"]
+   [:button {:type "button" :class "btn btn-warning"} "Warning"]
+   [:button {:type "button" :class "btn btn-error"} "Error"]
+   [:div
+    {:class "card w-96 bg-base-100 card-xs shadow-sm"}
+    [:div
+     {:class "card-body"}
+     [:h2 {:class "card-title"} "Xsmall Card"]
+     [:p
+      "A card component has a figure, a body part, and inside body there are title and actions parts"]
+     [:div
+      {:class "justify-end card-actions"}
+      [:button {:class "btn btn-primary"} "Buy Now"]]]]
+   [:div {:class "badge badge-error"} "Error"]
+   [:div {:class "badge badge-success"} "Success"]])
 
 (defn users-tables-tabs []
-  (r/with-let [active-tab (r/atom :standard)]
+  (r/with-let [active-tab (r/atom :daisy)]
     (let [container-style {:max-width "960px"
                            :margin "0 auto"
                            :padding "1.5rem"}
@@ -222,12 +244,12 @@
                             :border-bottom "2px solid #2563eb"}
           tab-inactive-style {:color "#64748b"}
           tabs [{:id :standard :label "Standard Table"}
-                {:id :rc :label "RC Table"}]
+                {:id :rc :label "RC Table"}
+                {:id :daisy :label "Daisy UI"}]
           active @active-tab]
       [:div {:style container-style}
        [components/toast-banner]
        [components/add-user-dialog]
-       [:h1 {:style {:margin-bottom "1rem"}} "Users"]
        [:div {:style tab-bar-style}
         (for [{:keys [id label]} tabs]
           ^{:key (name id)}
@@ -239,6 +261,7 @@
            label])]
        [:div {:style {:margin-top "1.5rem"}}
         (case active
+          :daisy [daisy-ui-button-showcase]
           :rc [users-table-rc {:wrap? false
                                :include-aux? false
                                :title nil}]

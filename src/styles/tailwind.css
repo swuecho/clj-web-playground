@@ -1,4 +1,53 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@plugin "daisyui";
+
+.btn {
+  display: inline-flex;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: calc(0.25rem * 1.5);
+  text-align: center;
+  vertical-align: middle;
+  outline-offset: 2px;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+  background-color: var(--btn-bg);
+  background-image: none, var(--btn-noise);
+  background-size: auto, calc(var(--noise) * 100%);
+  cursor: pointer;
+  color: var(--btn-fg);
+  --tw-prose-links: var(--btn-fg);
+  font-size: var(--fontsize, 0.875rem);
+  font-weight: 600;
+  height: var(--size);
+  padding-inline: var(--btn-p);
+  padding-left: var(--btn-p);
+  padding-right: var(--btn-p);
+  border-width: var(--border);
+  border-style: solid;
+  border-color: var(--btn-border);
+  border-start-start-radius: var(--join-ss, var(--radius-field));
+  border-start-end-radius: var(--join-se, var(--radius-field));
+  border-end-start-radius: var(--join-es, var(--radius-field));
+  border-end-end-radius: var(--join-ee, var(--radius-field));
+  box-shadow: 0 0.5px 0 0.5px oklch(100% 0 0 / calc(var(--depth) * 6%)) inset,
+    var(--btn-shadow);
+  text-shadow: 0 0.5px oklch(100% 0 0 / calc(var(--depth) * 0.15));
+  transition-property: color, background-color, border-color, box-shadow;
+  transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  transition-duration: 0.2s;
+  outline-color: var(--btn-color, var(--color-base-content));
+  touch-action: manipulation;
+  --size: calc(var(--size-field, 0.25rem) * 10);
+  --btn-bg: var(--btn-color, var(--color-base-200));
+  --btn-fg: var(--color-base-content);
+  --btn-p: 1rem;
+  --btn-border: color-mix(in oklab, var(--btn-bg), #000 calc(var(--depth) * 5%));
+  --btn-shadow: 0 3px 2px -2px color-mix(in oklab, var(--btn-bg) calc(var(--depth) * 30%), #0000),
+    0 4px 3px -2px color-mix(in oklab, var(--btn-bg) calc(var(--depth) * 30%), #0000);
+  --btn-noise: var(--fx-noise);
+}
