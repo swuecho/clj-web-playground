@@ -2,6 +2,7 @@
   (:gen-class)
   (:require
    [clojure.string :as str]
+   [clojure.tools.logging :as log]
    [clojure.walk :as walk]
    [muuntaja.core :as m]
    [next.jdbc :as jdbc]
@@ -23,6 +24,53 @@
 (def json-format "application/json")
 
 (def json-content-type (str json-format "; charset=utf-8"))
+
+(defn- elapsed-ms [started]
+  (long (/ (- (System/nanoTime) started) 1000000)))
+
+(defn- present-map [value]
+  (when (and (map? value) (seq value))
+    value))
+
+(defn- summarize-request [request]
+  (let [method (some-> request :request-method name str/upper-case)
+        uri (:uri request)
+        details (cond-> {}
+                   (:query-string request)
+                   (assoc :query-string (:query-string request))
+                   (present-map (:path-params request))
+                   (assoc :path-params (:path-params request))
+                   (present-map (:query-params request))
+                   (assoc :query-params (:query-params request))
+                   (present-map (:body-params request))
+                   (assoc :body-params (:body-params request)))]
+    {:method method
+     :uri uri
+     :details details}))
+
+(defn- summarize-response [response elapsed]
+  (let [content-type (get-in response [:headers "Content-Type"])]
+    (cond-> {:status (:status response)
+             :elapsed-ms elapsed}
+      content-type (assoc :content-type content-type))))
+
+(defn- wrap-request-logging [handler]
+  (fn [request]
+    (let [{:keys [method uri details]} (summarize-request request)
+          started (System/nanoTime)]
+      (if (seq details)
+        (log/infof "-> %s %s %s" method uri (pr-str details))
+        (log/infof "-> %s %s" method uri))
+      (try
+        (let [response (handler request)
+              elapsed (elapsed-ms started)
+              summary (summarize-response response elapsed)]
+          (log/infof "<- %s %s %s" method uri (pr-str summary))
+          response)
+        (catch Exception ex
+          (let [elapsed (elapsed-ms started)]
+            (log/errorf ex "X %s %s failed after %dms" method uri elapsed)
+            (throw ex)))))))
 
 (defn- respond-json
   ([data]
@@ -274,12 +322,13 @@
                         muuntaja/format-response-middleware]}}))
 
 (def app
-  (ring/ring-handler
-   router
-   (ring/routes
-    (ring/redirect-trailing-slash-handler)
-    (ring/create-default-handler
-     {:not-found not-found}))))
+  (wrap-request-logging
+   (ring/ring-handler
+    router
+    (ring/routes
+     (ring/redirect-trailing-slash-handler)
+     (ring/create-default-handler
+      {:not-found not-found})))))
 
 (defonce server (atom nil))
 
