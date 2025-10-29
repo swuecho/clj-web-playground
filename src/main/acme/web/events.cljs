@@ -297,7 +297,7 @@
                      :uri (str "/api/users/" uuid)
                      :timeout 8000
                      :headers {"Accept" "application/json"}
-                     :json-params {}
+                     :format (ajax/url-request-format)
                      :response-format (ajax/json-response-format {:keywords? true})
                      :on-success [::user-deleted uuid]
                      :on-failure [::delete-user-failed uuid]}}))))

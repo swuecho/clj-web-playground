@@ -265,6 +265,7 @@
       [:div {:class "mx-auto max-w-5xl space-y-6 p-6"}
        [components/toast-banner]
        [components/add-user-dialog]
+       [components/edit-user-dialog]
        [:div {:class "tabs tabs-boxed flex gap-3"}
         (for [{:keys [id label]} tabs]
           ^{:key (name id)}
