@@ -3,24 +3,50 @@
   (:require
    [clojure.string :as str]
    [muuntaja.core :as m]
+   [next.jdbc :as jdbc]
+   [next.jdbc.result-set :as rs]
    [reitit.ring :as ring]
    [reitit.ring.middleware.muuntaja :as muuntaja]
    [reitit.ring.middleware.parameters :as parameters]
    [ring.adapter.jetty :as jetty]
-   [ring.util.response :as response]))
+   [ring.util.response :as response])
+  (:import
+   (java.net URI)
+   (java.sql SQLException)))
 
-(def default-users
-  [{:uuid (str (java.util.UUID/randomUUID))
-    :name "Ada Lovelace"
-    :age 36}
-   {:uuid (str (java.util.UUID/randomUUID))
-    :name "Dennis Ritchie"
-    :age 70}
-   {:uuid (str (java.util.UUID/randomUUID))
-    :name "Grace Hopper"
-    :age 85}])
+(def default-database-url "postgresql://hwu:using555@192.168.0.135:5432/hwu")
 
-(defonce users (atom default-users))
+(defn- normalize-db-url [url]
+  (if (str/starts-with? url "jdbc:")
+    (subs url 5)
+    url))
+
+(defn- uri->db-spec [database-uri]
+  (let [uri (URI. (normalize-db-url database-uri))
+        path (.getPath uri)
+        dbname (when (and path (not (str/blank? path)))
+                 (str/replace-first path #"^/" ""))
+        [user password] (when-let [info (.getUserInfo uri)]
+                          (str/split info #":"))
+        port (.getPort uri)]
+    (cond-> {:dbtype "postgresql"}
+      (.getHost uri) (assoc :host (.getHost uri))
+      dbname (assoc :dbname dbname)
+      user (assoc :user user)
+      password (assoc :password password)
+      (pos? port) (assoc :port port))))
+
+(def database-url
+  (or (System/getenv "DATABASE_URL") default-database-url))
+
+(defonce datasource
+  (delay
+    (jdbc/get-datasource (uri->db-spec database-url))))
+
+(defn- ds []
+  @datasource)
+
+(def result-opts {:builder-fn rs/as-unqualified-lower-maps})
 
 (defn- normalize-age [age]
   (cond
@@ -35,12 +61,17 @@
             nil))))
     :else nil))
 
+(defn- user-exists? [uuid]
+  (some? (jdbc/execute-one! (ds)
+                            ["select 1 from \"UserTable\" where uuid = ? limit 1" uuid]
+                            result-opts)))
+
 (defn- validate-user [{:keys [uuid name age]}]
   (let [trimmed-name (some-> name str/trim)
         parsed-age (normalize-age age)
         supplied-uuid (some-> uuid str not-empty)
         duplicate? (when supplied-uuid
-                     (some #(= supplied-uuid (:uuid %)) @users))]
+                     (user-exists? supplied-uuid))]
     (cond
       (or (nil? trimmed-name) (str/blank? trimmed-name))
       {:status 400 :message "Name is required"}
@@ -53,15 +84,36 @@
 
       :else
       {:status 201
-       :user {:uuid (or supplied-uuid (str (java.util.UUID/randomUUID)))
+       :user {:uuid supplied-uuid
               :name trimmed-name
               :age parsed-age}})))
+
+(defn- validate-update [{:keys [name age] :as params}]
+  (let [name-present? (contains? params :name)
+        age-present? (contains? params :age)
+        trimmed-name (when name-present? (some-> name str/trim))
+        parsed-age (when age-present? (normalize-age age))]
+    (cond
+      (not (or name-present? age-present?))
+      {:status 400 :message "Supply at least one field to update"}
+
+      (and name-present? (or (nil? trimmed-name) (str/blank? trimmed-name)))
+      {:status 400 :message "Name is required"}
+
+      (and age-present? (or (nil? parsed-age) (neg? parsed-age)))
+      {:status 400 :message "Age must be a non-negative integer"}
+
+      :else
+      {:status 200
+       :updates (cond-> {}
+                  name-present? (assoc :name trimmed-name)
+                  age-present? (assoc :age parsed-age))})))
 
 (defn- ensure-unique-uuid [{:keys [uuid] :as user}]
   (if uuid
     user
     (loop [candidate (str (java.util.UUID/randomUUID))]
-      (if (some #(= candidate (:uuid %)) @users)
+      (if (user-exists? candidate)
         (recur (str (java.util.UUID/randomUUID)))
         (assoc user :uuid candidate)))))
 
@@ -70,20 +122,91 @@
       (response/status 404)))
 
 (defn- users-response [_]
-  (response/response @users))
+  (let [users (jdbc/execute! (ds)
+                             ["select uuid, name, age from \"UserTable\" order by name asc"]
+                             result-opts)]
+    (response/response users)))
 
 (defn- add-user-response [{:keys [body-params]}]
   (let [{:keys [status message user]} (validate-user body-params)]
     (if user
       (let [sanitized (ensure-unique-uuid user)]
-        (swap! users conj sanitized)
-        (-> (response/response sanitized)
-            (response/status status)))
+        (try
+          (let [created (jdbc/with-transaction [tx (ds)]
+                          (jdbc/execute-one! tx
+                                             ["insert into \"UserTable\" (uuid, name, age) values (?, ?, ?) returning uuid, name, age"
+                                              (:uuid sanitized)
+                                              (:name sanitized)
+                                              (:age sanitized)]
+                                             result-opts))]
+            (-> (response/response created)
+                (response/status status)))
+          (catch SQLException ex
+            (if (= "23505" (.getSQLState ex))
+              (-> (response/response {:error "A user with that uuid already exists"})
+                  (response/status 409))
+              (throw ex)))))
       (-> (response/response {:error message})
           (response/status status)))))
 
+(defn- build-update-sql [{:keys [name age]}]
+  (let [set-fragments (cond-> []
+                         name (conj "\"name\" = ?")
+                         age (conj "age = ?"))
+        params (cond-> []
+                 name (conj name)
+                 age (conj age))]
+    (when (seq set-fragments)
+      {:sql (str "update \"UserTable\" set " (str/join ", " set-fragments) " where uuid = ? returning uuid, name, age")
+       :params params})))
+
+(defn- update-user-response [{:keys [path-params body-params]}]
+  (let [uuid (:uuid path-params)
+        uuid (some-> uuid str/trim)]
+    (if (str/blank? uuid)
+      (-> (response/response {:error "User uuid is required"})
+          (response/status 400))
+      (let [{:keys [status message updates]} (validate-update body-params)]
+        (if updates
+          (if-let [{:keys [sql params]} (build-update-sql updates)]
+            (let [statement (conj params uuid)]
+              (try
+                (let [updated (jdbc/with-transaction [tx (ds)]
+                                 (jdbc/execute-one! tx
+                                                    (into [sql] statement)
+                                                    result-opts))]
+                  (if updated
+                    (-> (response/response updated)
+                        (response/status status))
+                    (not-found nil)))
+                (catch SQLException ex
+                  (throw ex))))
+            (-> (response/response {:error "Supply at least one field to update"})
+                (response/status 400)))
+          (-> (response/response {:error message})
+              (response/status status)))))))
+
+(defn- delete-user-response [{:keys [path-params]}]
+  (let [uuid (:uuid path-params)
+        uuid (some-> uuid str/trim)]
+    (if (str/blank? uuid)
+      (-> (response/response {:error "User uuid is required"})
+          (response/status 400))
+      (let [deleted (jdbc/with-transaction [tx (ds)]
+                       (jdbc/execute-one! tx
+                                          ["delete from \"UserTable\" where uuid = ? returning uuid, name, age" uuid]
+                                          result-opts))]
+        (if deleted
+          (response/response deleted)
+          (not-found nil))))))
+
 (defn- health-response [_]
-  (response/response {:status "ok"}))
+  (try
+    (jdbc/execute-one! (ds) ["select 1 as ok"] result-opts)
+    (response/response {:status "ok"})
+    (catch Exception _
+      (-> (response/response {:status "error"})
+          (response/status 500)))))
 
 (def muuntaja-instance m/instance)
 
@@ -92,7 +215,10 @@
    ["/api"
     ["/health" {:get health-response}]
     ["/users" {:get users-response
-                :post add-user-response}]]
+                :post add-user-response}
+     ["/:uuid" {:put update-user-response
+                 :patch update-user-response
+                 :delete delete-user-response}]]]
    {:data {:muuntaja muuntaja-instance
            :middleware [parameters/parameters-middleware
                         muuntaja/format-negotiate-middleware
