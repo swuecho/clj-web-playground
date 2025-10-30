@@ -46,3 +46,8 @@ clojure -M -e "(require 'acme.server.db 'acme.server.handlers.users 'acme.server
 ```
 - Quick smoke check to ensure the refactored namespaces compile after wiring Toucan2.
 - Good to run after touching server handlers so we catch missing requires before deploying.
+
+
+## query db 
+
+clojure -M -e "(require 'acme.server.db 'acme.server.models.todo) (def first-row (first (acme.server.models.todo/all))) (prn (type first-row)) (prn (into {} (seq first-row)))"

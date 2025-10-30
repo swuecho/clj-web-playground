@@ -69,10 +69,10 @@
            :muuntaja http/muuntaja-instance
            :middleware [parameters/parameters-middleware
                         muuntaja/format-negotiate-middleware
-                        muuntaja/format-request-middleware
-                        ring-coercion/coerce-request-middleware
                         muuntaja/format-response-middleware
+                        muuntaja/format-request-middleware
                         ring-coercion/coerce-response-middleware
+                        ring-coercion/coerce-request-middleware
                         ring-coercion/coerce-exceptions-middleware]}}))
 
 (def handler

@@ -23,9 +23,9 @@
    [:completed {:optional true} :boolean]])
 
 (def todo-response
-  [:map
+  [:map {:closed false}
    [:id [:int {:min 1}]]
-  [:title :string]
+   [:title :string]
    [:completed :boolean]
    [:created_at {:optional true} :any]
    [:updated_at {:optional true} :any]])
