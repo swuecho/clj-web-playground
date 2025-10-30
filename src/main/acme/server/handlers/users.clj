@@ -118,8 +118,9 @@
   (let [users (db/query ["select uuid, name, age from \"UserTable\" order by name asc"])]
     (http/respond-json users)))
 
-(defn add-user-response [{:keys [body-params]}]
-  (let [{:keys [status message user]} (validate-user body-params)]
+(defn add-user-response [{:keys [parameters body-params]}]
+  (let [body (or (:body parameters) body-params)
+        {:keys [status message user]} (validate-user body)]
     (if user
       (let [sanitized (ensure-unique-uuid user)]
         (try
@@ -135,8 +136,8 @@
               (throw ex)))))
       (http/respond-json {:error message} status))))
 
-(defn update-user-response [{:keys [path-params body-params]}]
-  (let [uuid (:uuid path-params)
+(defn update-user-response [{:keys [parameters path-params body-params]}]
+  (let [uuid (or (get-in parameters [:path :uuid]) (:uuid path-params))
         uuid (some-> uuid str/trim)
         uuid-param (->uuid uuid)]
     (cond
@@ -147,7 +148,8 @@
       (http/respond-json {:error "Invalid uuid format"} 400)
 
       :else
-      (let [{:keys [status message updates]} (validate-update body-params)]
+      (let [body (or (:body parameters) body-params)
+            {:keys [status message updates]} (validate-update body)]
         (if updates
           (if-let [{:keys [sql params]} (build-update-sql updates)]
             (let [statement (conj params uuid-param)]
@@ -162,8 +164,8 @@
             (http/respond-json {:error "Supply at least one field to update"} 400))
           (http/respond-json {:error message} status))))))
 
-(defn delete-user-response [{:keys [path-params]}]
-  (let [uuid (:uuid path-params)
+(defn delete-user-response [{:keys [parameters path-params]}]
+  (let [uuid (or (get-in parameters [:path :uuid]) (:uuid path-params))
         uuid (some-> uuid str/trim)
         uuid-param (->uuid uuid)]
     (cond
