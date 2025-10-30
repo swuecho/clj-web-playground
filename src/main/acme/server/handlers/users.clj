@@ -35,7 +35,7 @@
 
 (defn- user-exists? [uuid]
   (if-let [uuid (->uuid uuid)]
-    (some? (db/query-one ["select 1 from \"UserTable\" where uuid = ? limit 1" uuid]))
+    (some? (db/query-one ["select 1 as exists from \"UserTable\" where uuid = ? limit 1" uuid]))
     false))
 
 (defn- normalize-request-map [params]
@@ -111,11 +111,11 @@
                  name (conj name)
                  age (conj age))]
     (when (seq set-fragments)
-      {:sql (str "update \"UserTable\" set " (str/join ", " set-fragments) " where uuid = ? returning uuid, name, age")
+      {:sql (str "update \"UserTable\" set " (str/join ", " set-fragments) " where uuid = ? returning uuid::text as uuid, \"name\" as name, age as age")
        :params params})))
 
 (defn users-response [_]
-  (let [users (db/query ["select uuid, name, age from \"UserTable\" order by name asc"])]
+  (let [users (db/query ["select uuid::text as uuid, \"name\" as name, age as age from \"UserTable\" order by \"name\" asc"])]
     (http/respond-json users)))
 
 (defn add-user-response [{:keys [parameters body-params]}]
@@ -125,7 +125,7 @@
       (let [sanitized (ensure-unique-uuid user)]
         (try
           (let [created (db/with-transaction
-                          (db/query-one ["insert into \"UserTable\" (uuid, name, age) values (?, ?, ?) returning uuid, name, age"
+                          (db/query-one ["insert into \"UserTable\" (uuid, name, age) values (?, ?, ?) returning uuid::text as uuid, \"name\" as name, age as age"
                                          (:uuid sanitized)
                                          (:name sanitized)
                                          (:age sanitized)]))]
@@ -177,7 +177,7 @@
 
       :else
       (let [deleted (db/with-transaction
-                      (db/query-one ["delete from \"UserTable\" where uuid = ? returning uuid, name, age" uuid-param]))]
+                      (db/query-one ["delete from \"UserTable\" where uuid = ? returning uuid::text as uuid, \"name\" as name, age as age" uuid-param]))]
         (if deleted
           (http/respond-json deleted)
           (http/not-found nil))))))
