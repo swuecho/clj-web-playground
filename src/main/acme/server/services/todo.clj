@@ -8,7 +8,7 @@
       (update record :completed #(if (nil? %) false (boolean %))))))
 
 (defn list-todos []
-  (mapv normalize-instance (todo/all)))
+  (todo/all))
 
 (defn fetch-todo [id]
   (some-> (todo/fetch id) normalize-instance))
@@ -22,3 +22,13 @@
 
 (defn delete-todo! [id]
   (todo/delete! id))
+
+(comment 
+  (in-ns 'acme.server.services.todo)
+  )
+(comment 
+  (in-ns 'acme.server.services.todo)
+  (require 'acme.server.services.todo)
+  (list-todos)
+  (todo/all)
+  )

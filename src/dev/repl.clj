@@ -2,7 +2,8 @@
   (:require
    [acme.server.core :as core]
    [integrant.repl :as ig-repl]
-   [integrant.repl.state :as state]))
+   [integrant.repl.state :as state]
+   ))
 
 (defonce ^:private options (atom {}))
 
@@ -41,3 +42,9 @@
 (repl/stop)
 (repl/reset)
 )
+
+(comment
+(require 'acme.server.handlers.todos)
+(require 'acme.server.services.todo)
+(acme.server.services.todo/list-todos)
+  )

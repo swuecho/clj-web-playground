@@ -43,3 +43,9 @@
 
 (defn delete! [id]
   (t2/delete! model :toucan/pk id))
+
+(comment
+  (in-ns 'acme.server.models.todo)
+  (require 'acme.server.models.todo)
+  (all)
+  )
