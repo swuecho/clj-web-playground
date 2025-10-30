@@ -8,7 +8,7 @@
       (update record :completed #(if (nil? %) false (boolean %))))))
 
 (defn list-todos []
-  (todo/all))
+  (mapv normalize-instance (todo/all)))
 
 (defn fetch-todo [id]
   (some-> (todo/fetch id) normalize-instance))
