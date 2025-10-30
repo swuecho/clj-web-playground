@@ -6,8 +6,8 @@
 (def sass-input "public/css/users-table-rc.scss")
 (def sass-output "public/css/users-table-rc.css")
 
-(def tailwind-input "src/styles/tailwind.css")
-(def tailwind-output "public/css/tailwind.css")
+(def tailwind-input "src/styles/main-tailwind.css")
+(def tailwind-output "public/css/main-tailwind.css")
 (def tailwind-config "tailwind.config.js")
 
 (defn- file->mtime [path]
@@ -30,7 +30,7 @@
         (throw (ex-info "Sass compilation failed" {:error err :stdout out :exit exit}))))))
 
 (defn- compile-tailwind! [mode]
-  (let [args (cond-> ["npx" "tailwindcss"
+  (let [args (cond-> ["npx" "@tailwindcss/cli"
                       "-i" tailwind-input
                       "-o" tailwind-output
                       "-c" tailwind-config]
