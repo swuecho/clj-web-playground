@@ -9,15 +9,13 @@
 
 (def json-format "application/json")
 
-(def json-content-type (str json-format "; charset=utf-8"))
-
 (defn respond-json
   ([data]
    (respond-json data 200))
   ([data status]
    {:status status
-    :headers {"Content-Type" json-content-type}
-    :body (m/encode muuntaja-instance json-format data)}))
+    :body data
+    :muuntaja/response {:format json-format}}))
 
 (defn not-found [_]
   (respond-json {:error "Not found"} 404))

@@ -30,6 +30,7 @@ Toucan2's `define-default-fields` config returns `[:id :title :completed :create
 - `completed` accepts booleans or truthy/falsy strings such as `"true"` / `"false"` in incoming JSON.
 - `POST /api/todo` and the update endpoints trim whitespace in `title` and reject blank values.
 - `POST` responds with HTTP 201 and the inserted row. Updates return the fresh row. Missing rows yield a 404.
+- Requests run through Malli + Reitit coercion, so payloads that fail schema validation yield a descriptive 400 response (for example, missing `title`).
 
 ### Quick smoke check
 

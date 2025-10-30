@@ -12,6 +12,7 @@
   - `/api/todo` – Toucan2-backed CRUD endpoints; see `docs/todo-api.md` for payload details.
 - Database access uses `next.jdbc` for the user endpoints and Toucan2 ORM for todos. Configure the `DATABASE_URL` environment variable or update `acme.server.db/default-database-url`.
 - File changes under `src/main` or `src/dev` are picked up automatically via Ring's `wrap-reload`; set `ACME_DISABLE_RELOAD=true` before starting the server to turn this off (e.g. in production).
+- Request and response payloads for the todo API are validated with Malli and Reitit coercion, so malformed payloads return structured 400/422 JSON errors automatically.
 
 To stop the server in a REPL/dev session call `(acme.server.core/stop!)`.
 
