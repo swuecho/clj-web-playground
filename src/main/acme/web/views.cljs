@@ -214,21 +214,21 @@
     [:span "Error alerts surface problems that need fixing."]]])
 
 (defn daisy-ui-form-showcase []
-  [:form {:class "grid gap-4 sm:grid-cols-2"}
-   [:div {:class "form-control"}
+  [:form {:class "grid gap-8 sm:grid-cols-2"}
+   [:div {:class "form-control w-full max-w-xs space-y-4"}
     [:label {:class "label"}
      [:span {:class "label-text"} "Email"]]
     [:input {:type "email"
              :placeholder "person@example.com"
              :class "input input-bordered"}]]
-   [:div {:class "form-control"}
+   [:div {:class "form-control w-full max-w-xs space-y-4"}
     [:label {:class "label"}
      [:span {:class "label-text"} "Role"]]
     [:select {:class "select select-bordered"}
      [:option "Viewer"]
      [:option "Editor"]
      [:option "Admin"]]]
-   [:div {:class "form-control sm:col-span-2"}
+   [:div {:class "form-control w-full max-w-xs space-y-4"}
     [:label {:class "label"}
      [:span {:class "label-text"} "Notes"]]
     [:textarea {:class "textarea textarea-bordered"
