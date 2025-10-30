@@ -2,7 +2,12 @@
   (:require
    [clojure.string :as str]
    [next.jdbc :as jdbc]
-   [next.jdbc.result-set :as rs])
+   [next.jdbc.result-set :as rs]
+   [methodical.core :as m]
+   [toucan2.connection :as conn]
+   [toucan2.core :as t2]
+   [toucan2.jdbc.connection]
+   [toucan2.jdbc.options :as jdbc.options])
   (:import
    (java.net URI)))
 
@@ -38,4 +43,25 @@
 (defn ds []
   @datasource)
 
-(def result-opts {:builder-fn rs/as-unqualified-lower-maps})
+(swap! jdbc.options/global-options
+       assoc
+       :builder-fn rs/as-unqualified-lower-maps)
+
+(m/defmethod conn/do-with-connection :default
+  [_connectable f]
+  (conn/do-with-connection (ds) f))
+
+(defn query
+  "Execute a SQL statement and realize the full result set."
+  [statement]
+  (t2/query statement))
+
+(defn query-one
+  "Execute a SQL statement and return the first row, if any."
+  [statement]
+  (t2/query-one statement))
+
+(defmacro with-transaction
+  "Run `body` within a transaction using the default datasource."
+  [& body]
+  `(conn/with-transaction [] ~@body))
