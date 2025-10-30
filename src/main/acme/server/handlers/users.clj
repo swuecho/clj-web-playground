@@ -2,7 +2,6 @@
   (:require
    [clojure.string :as str]
    [clojure.walk :as walk]
-   [next.jdbc :as jdbc]
    [acme.server.db :as db]
    [acme.server.http :as http])
   (:import
@@ -36,9 +35,7 @@
 
 (defn- user-exists? [uuid]
   (if-let [uuid (->uuid uuid)]
-    (some? (jdbc/execute-one! (db/ds)
-                              ["select 1 from \"UserTable\" where uuid = ? limit 1" uuid]
-                              db/result-opts))
+    (some? (db/query-one ["select 1 from \"UserTable\" where uuid = ? limit 1" uuid]))
     false))
 
 (defn- normalize-request-map [params]
@@ -118,9 +115,7 @@
        :params params})))
 
 (defn users-response [_]
-  (let [users (jdbc/execute! (db/ds)
-                             ["select uuid, name, age from \"UserTable\" order by name asc"]
-                             db/result-opts)]
+  (let [users (db/query ["select uuid, name, age from \"UserTable\" order by name asc"])]
     (http/respond-json users)))
 
 (defn add-user-response [{:keys [body-params]}]
@@ -128,13 +123,11 @@
     (if user
       (let [sanitized (ensure-unique-uuid user)]
         (try
-          (let [created (jdbc/with-transaction [tx (db/ds)]
-                          (jdbc/execute-one! tx
-                                             ["insert into \"UserTable\" (uuid, name, age) values (?, ?, ?) returning uuid, name, age"
-                                              (:uuid sanitized)
-                                              (:name sanitized)
-                                              (:age sanitized)]
-                                             db/result-opts))]
+          (let [created (db/with-transaction
+                          (db/query-one ["insert into \"UserTable\" (uuid, name, age) values (?, ?, ?) returning uuid, name, age"
+                                         (:uuid sanitized)
+                                         (:name sanitized)
+                                         (:age sanitized)]))]
             (http/respond-json created status))
           (catch SQLException ex
             (if (= "23505" (.getSQLState ex))
@@ -159,10 +152,8 @@
           (if-let [{:keys [sql params]} (build-update-sql updates)]
             (let [statement (conj params uuid-param)]
               (try
-                (let [updated (jdbc/with-transaction [tx (db/ds)]
-                                 (jdbc/execute-one! tx
-                                                    (into [sql] statement)
-                                                    db/result-opts))]
+                (let [updated (db/with-transaction
+                                (db/query-one (into [sql] statement)))]
                   (if updated
                     (http/respond-json updated status)
                     (http/not-found nil)))
@@ -183,10 +174,8 @@
       (http/respond-json {:error "Invalid uuid format"} 400)
 
       :else
-      (let [deleted (jdbc/with-transaction [tx (db/ds)]
-                       (jdbc/execute-one! tx
-                                          ["delete from \"UserTable\" where uuid = ? returning uuid, name, age" uuid-param]
-                                          db/result-opts))]
+      (let [deleted (db/with-transaction
+                      (db/query-one ["delete from \"UserTable\" where uuid = ? returning uuid, name, age" uuid-param]))]
         (if deleted
           (http/respond-json deleted)
           (http/not-found nil))))))
