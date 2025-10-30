@@ -32,4 +32,6 @@
   :repl {:extra-deps {nrepl/nrepl {:mvn/version "1.1.0"}
                       cider/cider-nrepl {:mvn/version "0.45.0"}}
          :main-opts ["-m" "nrepl.cmdline"
-                     "--middleware" "[cider.nrepl/cider-middleware]"]}}}
+                     "--middleware" "[cider.nrepl/cider-middleware]"]}
+  :test {:extra-paths ["src/test"]
+         :main-opts ["-m" "acme.test-runner"]}}}
