@@ -2,6 +2,7 @@
   (:gen-class)
   (:require
    [acme.server.handlers.health :as health]
+   [acme.server.handlers.todos :as todos]
    [acme.server.handlers.users :as users]
    [acme.server.http :as http]
    [acme.server.middleware.logging :refer [wrap-request-logging]]
@@ -12,6 +13,12 @@
 
 (def routes
   [["/api/health" {:get health/health-response}]
+   ["/api/todo" {:get todos/list-response
+                 :post todos/create-response}]
+   ["/api/todo/:id" {:get todos/fetch-response
+                     :put todos/update-response
+                     :patch todos/update-response
+                     :delete todos/delete-response}]
    ["/api/users" {:get users/users-response
                    :post users/add-user-response}]
    ["/api/users/:uuid" {:put users/update-user-response
