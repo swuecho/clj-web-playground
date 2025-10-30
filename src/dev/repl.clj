@@ -39,4 +39,5 @@
 (require 'repl) 
 (repl/start)
 (repl/stop)
+(repl/reset)
 )

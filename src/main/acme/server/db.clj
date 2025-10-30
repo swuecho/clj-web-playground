@@ -6,7 +6,6 @@
    [next.jdbc :as jdbc]
    [next.jdbc.result-set :as rs]
    [toucan2.connection :as conn]
-   [toucan2.core :as t2]
    [toucan2.jdbc.connection]
    [toucan2.jdbc.options :as jdbc.options])
   (:import
@@ -60,6 +59,12 @@
   (or @managed-datasource
       @default-datasource))
 
+(def ^:dynamic *current-connection* nil)
+
+(defn- current-connection []
+  (or *current-connection*
+      (ds)))
+
 (swap! jdbc.options/global-options
        assoc
        :builder-fn rs/as-unqualified-lower-maps)
@@ -68,20 +73,29 @@
   [_connectable f]
   (conn/do-with-connection (ds) f))
 
+(def query-opts
+  {:builder-fn rs/as-unqualified-lower-maps})
+
 (defn query
-  "Execute a SQL statement and realize the full result set."
-  [statement]
-  (t2/query statement))
+  "Execute a SQL statement and realize the full result set as a vector of maps."
+  ([statement]
+   (jdbc/execute! (current-connection) statement query-opts))
+  ([connection statement]
+   (jdbc/execute! connection statement query-opts)))
 
 (defn query-one
-  "Execute a SQL statement and return the first row, if any."
-  [statement]
-  (t2/query-one statement))
+  "Execute a SQL statement and return the first row as a map, if any."
+  ([statement]
+   (jdbc/execute-one! (current-connection) statement query-opts))
+  ([connection statement]
+   (jdbc/execute-one! connection statement query-opts)))
 
 (defmacro with-transaction
-  "Run `body` within a transaction using the default datasource."
+  "Run `body` within a SQL transaction using next.jdbc."
   [& body]
-  `(conn/with-transaction [] ~@body))
+  `(jdbc/with-transaction [tx# (ds)]
+     (binding [*current-connection* tx#]
+       ~@body)))
 
 (defmethod ig/init-key :acme.server/db
   [_ {:keys [database-url]}]
