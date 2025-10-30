@@ -51,3 +51,17 @@ clojure -M -e "(require 'acme.server.db 'acme.server.handlers.users 'acme.server
 ## query db 
 
 clojure -M -e "(require 'acme.server.db 'acme.server.models.todo) (def first-row (first (acme.server.models.todo/all))) (prn (type first-row)) (prn (into {} (seq first-row)))"
+
+## Integrant REPL helpers
+
+```
+npm run repl
+```
+- Starts `clj -M:repl`, launching an nREPL server with CIDER middleware preloaded. Connect your editor client to the port printed in the terminal.
+
+```
+(require 'repl)
+(repl/start)  ; boots the Integrant system
+(repl/reset)  ; reloads modified namespaces and restarts Jetty
+(repl/configure! {:port 9090}) ; override Jetty port before the next start/reset
+```

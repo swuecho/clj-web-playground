@@ -9,6 +9,7 @@
    [acme.server.schemas.user :as user.schema]
    [acme.server.http :as http]
    [acme.server.middleware.logging :refer [wrap-request-logging]]
+   [integrant.core :as ig]
    [reitit.ring :as ring]
    [reitit.coercion.malli :as malli-coercion]
    [reitit.ring.coercion :as ring-coercion]
@@ -25,6 +26,22 @@
 
 (def reload-enabled?
   (not (truthy-env? (System/getenv "ACME_DISABLE_RELOAD"))))
+
+(def default-port 8081)
+
+(def default-reload-dirs ["src/main" "src/dev"])
+
+(defn- parse-port [value]
+  (cond
+    (nil? value) nil
+    (integer? value) value
+    (string? value) (Integer/parseInt value)
+    :else (Integer/parseInt (str value))))
+
+(defn- resolve-port [port]
+  (or (parse-port port)
+      (some-> (System/getenv "PORT") Integer/parseInt)
+      default-port))
 
 (def routes
   [["/api/health"
@@ -146,31 +163,63 @@
      (ring/create-default-handler
       {:not-found http/not-found})))))
 
-(def app
-  (if reload-enabled?
-    (wrap-reload #'handler {:dirs ["src/main" "src/dev"]})
-    handler))
+(defonce system* (atom nil))
 
-(defonce server (atom nil))
+(defn system-config
+  "Build the Integrant system configuration. Accepts optional overrides:
+  - `:port` will override the HTTP port (default 8081 or $PORT).
+  - `:reload?` enables wrap-reload (default honours `ACME_DISABLE_RELOAD`).
+  - `:reload-dirs` overrides the directories that trigger reloads.
+  - `:database-url` overrides the JDBC connection string."
+  ([] (system-config {}))
+  ([{:keys [port reload? reload-dirs database-url] :as _opts}]
+   (let [reload? (if (some? reload?) reload? reload-enabled?)
+         reload-dirs (or reload-dirs default-reload-dirs)]
+     {:acme.server/db {:database-url database-url}
+      :acme.server/http-handler {:reload? reload?
+                                 :reload-dirs reload-dirs
+                                 :db (ig/ref :acme.server/db)}
+      :acme.server/http-server {:port (resolve-port port)
+                                :handler (ig/ref :acme.server/http-handler)}})))
+
+(defmethod ig/init-key :acme.server/http-handler
+  [_ {:keys [reload? reload-dirs]}]
+  (let [reload? (if (some? reload?) reload? reload-enabled?)
+        dirs (or reload-dirs default-reload-dirs)]
+    (if reload?
+      (wrap-reload #'handler {:dirs dirs})
+      handler)))
+
+(defmethod ig/init-key :acme.server/http-server
+  [_ {:keys [handler port]}]
+  (jetty/run-jetty handler {:port (resolve-port port)
+                            :join? false}))
+
+(defmethod ig/halt-key! :acme.server/http-server
+  [_ server]
+  (when server
+    (.stop server)))
 
 (defn stop! []
-  (when-let [s @server]
-    (.stop s)
-    (reset! server nil)))
+  (when-let [system @system*]
+    (try
+      (ig/halt! system)
+      (finally
+        (reset! system* nil)))))
 
 (defn start!
   ([] (start! {}))
-  ([{:keys [port join?]
-     :or {port (some-> (System/getenv "PORT") Integer/parseInt)
-          join? false}}]
-   (let [port (or port 8081)]
-     (stop!)
-     (let [running (jetty/run-jetty #'app {:port port :join? join?})]
-       (reset! server running)
-       running))))
+  ([opts]
+   (stop!)
+   (let [config (system-config opts)
+         system (ig/init config)
+         server (:acme.server/http-server system)]
+     (reset! system* system)
+     server)))
 
 (defn -main
   [& [port]]
   (let [port (some-> port Integer/parseInt)
-        server (start! {:port port :join? true})]
-    (println (format "User API listening on http://localhost:%s" (.getPort server)))))
+        server (start! {:port port})]
+    (println (format "User API listening on http://localhost:%s" (.getPort server)))
+    (.join server)))

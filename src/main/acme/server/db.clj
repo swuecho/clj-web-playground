@@ -1,14 +1,16 @@
 (ns acme.server.db
   (:require
    [clojure.string :as str]
+   [integrant.core :as ig]
+   [methodical.core :as m]
    [next.jdbc :as jdbc]
    [next.jdbc.result-set :as rs]
-   [methodical.core :as m]
    [toucan2.connection :as conn]
    [toucan2.core :as t2]
    [toucan2.jdbc.connection]
    [toucan2.jdbc.options :as jdbc.options])
   (:import
+   (java.lang AutoCloseable)
    (java.net URI)))
 
 (def default-database-url "postgresql://hwu:using555@192.168.0.135:5432/hwu")
@@ -33,15 +35,30 @@
       password (assoc :password password)
       (pos? port) (assoc :port port))))
 
-(def database-url
-  (or (System/getenv "DATABASE_URL") default-database-url))
+(defn resolve-database-url
+  "Resolve the database URL from `opts` or the environment, falling back to
+  `default-database-url`."
+  ([] (resolve-database-url nil))
+  ([database-url]
+   (or database-url
+       (System/getenv "DATABASE_URL")
+       default-database-url)))
 
-(defonce datasource
+(defonce managed-datasource (atom nil))
+
+(defonce default-datasource
   (delay
-    (jdbc/get-datasource (uri->db-spec database-url))))
+    (jdbc/get-datasource (uri->db-spec (resolve-database-url)))))
+
+(defn- record-datasource! [ds]
+  (reset! managed-datasource ds))
+
+(defn- clear-datasource! []
+  (reset! managed-datasource nil))
 
 (defn ds []
-  @datasource)
+  (or @managed-datasource
+      @default-datasource))
 
 (swap! jdbc.options/global-options
        assoc
@@ -65,3 +82,18 @@
   "Run `body` within a transaction using the default datasource."
   [& body]
   `(conn/with-transaction [] ~@body))
+
+(defmethod ig/init-key :acme.server/db
+  [_ {:keys [database-url]}]
+  (let [resolved-url (resolve-database-url database-url)
+        ds (jdbc/get-datasource (uri->db-spec resolved-url))]
+    (record-datasource! ds)
+    ds))
+
+(defmethod ig/halt-key! :acme.server/db
+  [_ datasource]
+  (try
+    (when (instance? AutoCloseable datasource)
+      (.close ^AutoCloseable datasource))
+    (finally
+      (clear-datasource!))))
