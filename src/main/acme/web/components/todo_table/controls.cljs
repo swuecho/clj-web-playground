@@ -19,8 +19,8 @@
                               (empty? created-before)
                               (empty? updated-after)
                               (empty? updated-before))]
-    [:div {:class "flex flex-wrap items-end gap-4"}
-     [:div {:class "form-control w-full sm:w-44"}
+    [:div {:class "grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"}
+     [:div {:class "form-control w-full"}
       [:label {:class "label"}
        [:span {:class "label-text font-semibold"} "Status"]]
       [:select {:class "select select-bordered select-sm"
@@ -31,7 +31,7 @@
        [:option {:value "all"} "All"]
        [:option {:value "completed"} "Completed"]
        [:option {:value "pending"} "Pending"]]]
-     [:div {:class "form-control w-full sm:w-56"}
+     [:div {:class "form-control w-full"}
       [:label {:class "label"}
        [:span {:class "label-text font-semibold"} "Created After"]]
       [:input {:type "datetime-local"
@@ -40,7 +40,7 @@
                :on-change #(rf/dispatch [::events/update-todo-filter
                                          [:created :after]
                                          (.. % -target -value)])}]]
-     [:div {:class "form-control w-full sm:w-56"}
+     [:div {:class "form-control w-full"}
       [:label {:class "label"}
        [:span {:class "label-text font-semibold"} "Created Before"]]
       [:input {:type "datetime-local"
@@ -49,7 +49,7 @@
                :on-change #(rf/dispatch [::events/update-todo-filter
                                          [:created :before]
                                          (.. % -target -value)])}]]
-     [:div {:class "form-control w-full sm:w-56"}
+     [:div {:class "form-control w-full"}
       [:label {:class "label"}
        [:span {:class "label-text font-semibold"} "Updated After"]]
       [:input {:type "datetime-local"
@@ -58,7 +58,7 @@
                :on-change #(rf/dispatch [::events/update-todo-filter
                                          [:updated :after]
                                          (.. % -target -value)])}]]
-     [:div {:class "form-control w-full sm:w-56"}
+     [:div {:class "form-control w-full"}
       [:label {:class "label"}
        [:span {:class "label-text font-semibold"} "Updated Before"]]
       [:input {:type "datetime-local"
@@ -67,9 +67,9 @@
                :on-change #(rf/dispatch [::events/update-todo-filter
                                          [:updated :before]
                                          (.. % -target -value)])}]]
-     [:div {:class "flex h-full items-end"}
+     [:div {:class "flex items-end"}
       [:button {:type "button"
-                :class "btn btn-ghost btn-sm"
+                :class "btn btn-ghost btn-sm w-full sm:w-auto"
                 :on-click #(rf/dispatch [::events/clear-todo-filters])
                 :disabled filters-default?}
        "Clear Filters"]]]))
@@ -87,7 +87,7 @@
 
 (defn pagination-controls [{:keys [summary per-page page total-pages can-prev? can-next? prev-page next-page]}]
   [:div {:class "flex flex-wrap items-center justify-between gap-4"}
-   [:div {:class "text-sm text-base-content/70"} summary]
+   [:div {:class "text-sm font-medium text-base-content/70"} summary]
    [:div {:class "flex flex-wrap items-center gap-3"}
     [:div {:class "form-control w-full sm:w-32"}
      [:label {:class "label"}
@@ -106,7 +106,7 @@
                :on-click #(when can-prev?
                             (rf/dispatch [::events/set-todo-page prev-page]))}
       "Prev"]
-     [:span {:class "text-sm font-medium"}
+     [:span {:class "text-sm font-medium text-base-content/80"}
       (str "Page " page " of " total-pages)]
      [:button {:type "button"
                :class "btn btn-outline btn-sm"
