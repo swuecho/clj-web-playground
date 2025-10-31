@@ -4,7 +4,7 @@
    [acme.web.components.todo-row-actions :refer [todo-row-actions]]))
 
 (def header-base-class
-  "bg-base-200/85 text-[11px] font-semibold uppercase tracking-wide text-base-content/70 px-4 py-3 border-b border-base-200/80 first:rounded-tl-3xl last:rounded-tr-3xl")
+  "bg-base-200/85 text-[11px] font-semibold uppercase tracking-wide text-base-content/70 px-4 py-3 border-b border-base-200/80 ")
 
 (def cell-base-class "px-4 py-3 align-middle text-sm text-base-content/90 border-b border-base-200")
 

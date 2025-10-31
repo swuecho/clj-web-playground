@@ -68,10 +68,7 @@
             [:p {:class "text-sm text-base-content/70"} header-subtext]]
            [controls/action-buttons]]
           [:div {:class "mt-6"}
-           [controls/filter-controls filters]]
-          (when (pos? total)
-            [:div {:class "mt-6 border-t border-base-200 pt-6"}
-             [controls/pagination-controls pagination-props]])]
+           [controls/filter-controls filters]]]
          (when status-section
            [:div {:class "rounded-sm border border-base-200 bg-base-100/95 p-5 shadow-sm"}
             status-section])
@@ -84,7 +81,6 @@
                           :rowClassName (fn [_ _]
                                           "odd:bg-base-100 even:bg-base-200 transition-colors hover:bg-primary/5 last:[&_td]:border-b-0")
                           :tableLayout "auto"
-                          :scroll #js {:x "max-content"}}]])
-         (when (and (pos? total) (> total per-page))
-           [:div {:class "rounded-sm border border-base-200 bg-base-100/95 p-4 shadow-sm"}
-            [controls/pagination-controls pagination-props]])]))))
+                          :scroll #js {:x "max-content"}}]
+            [:div {:class "border-t border-base-200 bg-base-100/95 px-5 py-4"}
+             [controls/pagination-controls pagination-props]]])]))))
