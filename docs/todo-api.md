@@ -12,6 +12,15 @@ create table if not exists "todo_items" (
 );
 ```
 
+```sql
+INSERT INTO "todo_items" (title, completed, created_at, updated_at)
+SELECT
+    'Todo Item ' || generate_series(1, 100),
+    (random() < 0.5),
+    NOW() - (random() * interval '365 days'),
+    NOW() - (random() * interval '30 days')
+FROM generate_series(1, 100);
+```
 Toucan2's `define-default-fields` config returns `[:id :title :completed :created_at :updated_at]`, so those keys appear in JSON responses.
 
 ## Endpoints

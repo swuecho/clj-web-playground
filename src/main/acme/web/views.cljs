@@ -29,13 +29,13 @@
      (fn []
        (let [table-section (cond
                              @loading? [:div {:class "alert alert-info"}
-                                         [:span "Loading users..."]]
+                                        [:span "Loading users..."]]
                              @error [:div {:class "alert alert-error"}
                                      [:span @error]]
                              (empty? @users) [:div {:class "alert alert-warning"}
-                                             [:span "No users found."]]
+                                              [:span "No users found."]]
                              :else
-                             [:div {:class "rounded-2xl border border-base-200 bg-base-100 shadow-sm"}
+                             [:div {:class "rounded-sm border border-base-200 bg-base-100 shadow-sm"}
                               [:div {:class "overflow-x-auto"}
                                [:table {:class "table table-zebra"}
                                 [:thead
@@ -53,22 +53,22 @@
                                     [:td {:class "align-middle"} age]
                                     [:td {:class "align-middle text-right"}
                                      [user-row-actions uuid]]])]]]])
-              actions [:div {:class "flex flex-wrap gap-3"}
-                       [:button {:type "button"
-                                 :class "btn btn-outline"
-                                 :on-click #(rf/dispatch [::events/fetch-users])}
-                        "Reload"]
-                       [:button {:type "button"
-                                 :class "btn btn-primary"
-                                 :on-click #(rf/dispatch [::events/open-add-user-dialog])}
-                        "Add User"]]
-              content (cond-> []
-                        include-aux? (conj [toast-banner])
-                        include-aux? (conj [add-user-dialog])
-                        include-aux? (conj [edit-user-dialog])
-                        title (conj [:h1 {:class "text-2xl font-semibold"} title])
-                        true (conj table-section)
-                        true (conj actions))]
+             actions [:div {:class "flex flex-wrap gap-3"}
+                      [:button {:type "button"
+                                :class "btn btn-outline"
+                                :on-click #(rf/dispatch [::events/fetch-users])}
+                       "Reload"]
+                      [:button {:type "button"
+                                :class "btn btn-primary"
+                                :on-click #(rf/dispatch [::events/open-add-user-dialog])}
+                       "Add User"]]
+             content (cond-> []
+                       include-aux? (conj [toast-banner])
+                       include-aux? (conj [add-user-dialog])
+                       include-aux? (conj [edit-user-dialog])
+                       title (conj [:h1 {:class "text-2xl font-semibold"} title])
+                       true (conj table-section)
+                       true (conj actions))]
          (into (if wrap?
                  [:div {:class container-classes}]
                  [:div {:class "space-y-6"}])
@@ -140,35 +140,35 @@
                                      (-> user
                                          (assoc :key (:uuid user)))))
                              (clj->js))
-            table-section (cond
-                            @loading? [:div {:class "alert alert-info users-table-rc__status users-table-rc__status--loading"}
-                                       [:span "Loading users..."]]
-                            @error [:div {:class "alert alert-error users-table-rc__status users-table-rc__status--error"}
-                                    [:span @error]]
-                            (empty? @users) [:div {:class "alert alert-warning users-table-rc__status users-table-rc__status--empty"}
-                                             [:span "No users found."]]
-                            :else
-                            [:div {:class "rounded-2xl border border-base-200 bg-base-100 shadow-sm"}
-                             [:> rc-table {:columns columns
-                                           :data table-data
-                                           :rowKey "uuid"
-                                           :className "users-table-rc__table"
-                                           :tableLayout "auto"
-                                           :scroll #js {:x "max-content"}}]])
-            actions [:div {:class "flex flex-wrap gap-3"}
-                     [:button {:type "button"
-                               :class "btn btn-outline"
-                               :on-click #(rf/dispatch [::events/fetch-users])}
-                      "Reload"]
-                     [:button {:type "button"
-                               :class "btn btn-primary"
-                               :on-click #(rf/dispatch [::events/open-add-user-dialog])}
-                      "Add User"]]
-            content (cond-> []
+             table-section (cond
+                             @loading? [:div {:class "alert alert-info users-table-rc__status users-table-rc__status--loading"}
+                                        [:span "Loading users..."]]
+                             @error [:div {:class "alert alert-error users-table-rc__status users-table-rc__status--error"}
+                                     [:span @error]]
+                             (empty? @users) [:div {:class "alert alert-warning users-table-rc__status users-table-rc__status--empty"}
+                                              [:span "No users found."]]
+                             :else
+                             [:div {:class "rounded-sm border border-base-200 bg-base-100 shadow-sm"}
+                              [:> rc-table {:columns columns
+                                            :data table-data
+                                            :rowKey "uuid"
+                                            :className "users-table-rc__table"
+                                            :tableLayout "auto"
+                                            :scroll #js {:x "max-content"}}]])
+             actions [:div {:class "flex flex-wrap gap-3"}
+                      [:button {:type "button"
+                                :class "btn btn-outline"
+                                :on-click #(rf/dispatch [::events/fetch-users])}
+                       "Reload"]
+                      [:button {:type "button"
+                                :class "btn btn-primary"
+                                :on-click #(rf/dispatch [::events/open-add-user-dialog])}
+                       "Add User"]]
+             content (cond-> []
                        include-aux? (conj [toast-banner])
                        include-aux? (conj [add-user-dialog])
                        include-aux? (conj [edit-user-dialog])
-                      title (conj [:h1 {:class "users-table-rc__heading text-2xl font-semibold"} title])
+                       title (conj [:h1 {:class "users-table-rc__heading text-2xl font-semibold"} title])
                        true (conj table-section)
                        true (conj actions))]
          (wrap-container content))))))
@@ -273,11 +273,11 @@
         (for [{:keys [id label]} tabs]
           ^{:key (name id)}
           (let [active? (= id active)
-                tab-classes (->> ["tab text-sm font-semibold px-5 py-2 transition-colors duration-150"
-                                   (when active? "tab-active bg-primary text-primary-content shadow-sm")
-                                   (when-not active? "text-base-content/70 hover:text-base-content hover:bg-base-200")]
-                                  (remove nil?)
-                                  (str/join " "))]
+                tab-classes (->> ["tab rounded-sm text-sm font-semibold px-5 py-2 transition-colors duration-150"
+                                  (when active? "tab-active bg-primary text-primary-content shadow-sm")
+                                  (when-not active? "text-base-content/70 hover:text-base-content hover:bg-base-200")]
+                                 (remove nil?)
+                                 (str/join " "))]
             [:button {:type "button"
                       :class tab-classes
                       :aria-pressed active?
@@ -310,7 +310,7 @@
          (for [{:keys [id label]} tabs]
            ^{:key (name id)}
            (let [active? (= id active)
-                 tab-classes (->> ["tab text-sm font-semibold px-5 py-2 transition-colors duration-150"
+                 tab-classes (->> ["tab text-sm rounded-sm font-semibold px-5 py-2 transition-colors duration-150"
                                    (when active? "tab-active bg-secondary text-secondary-content shadow-sm")
                                    (when-not active? "text-base-content/70 hover:text-base-content hover:bg-base-200")]
                                   (remove nil?)

@@ -204,6 +204,24 @@
         (when-not (js/isNaN parsed)
           parsed)))))
 
+(defn- parse-int-value [value default]
+  (cond
+    (number? value) (int value)
+    (string? value) (let [parsed (js/parseInt value 10)]
+                      (if (js/isNaN parsed)
+                        default
+                        parsed))
+    :else default))
+
+(defn- clamp-page [total per-page page]
+  (let [per (max 1 (or per-page 1))
+        total (max 0 total)
+        last-page (max 1 (int (js/Math.ceil (/ total per))))
+        target (parse-int-value page 1)]
+    (-> target
+        (max 1)
+        (min last-page))))
+
 (rf/reg-event-fx
  ::update-user
  (fn [{:keys [db]} _]
@@ -338,9 +356,14 @@
 (rf/reg-event-db
  ::todos-loaded
  (fn [db [_ todos]]
-   (-> db
-       (assoc-in [:todos :items] (vec todos))
-       (assoc-in [:todos :loading?] false))))
+   (let [items (vec todos)
+         per-page (get-in db [:todos :pagination :per-page])
+         current-page (get-in db [:todos :pagination :page])]
+     (-> db
+         (assoc-in [:todos :items] items)
+         (assoc-in [:todos :loading?] false)
+         (assoc-in [:todos :pagination :page]
+                   (clamp-page (count items) per-page current-page))))))
 
 (rf/reg-event-fx
  ::fetch-todos-failed
@@ -364,7 +387,48 @@
          direction (if (#{:asc :desc} direction) direction :desc)]
      (-> db
          (assoc-in [:todos :sort :field] field)
-         (assoc-in [:todos :sort :direction] direction)))))
+         (assoc-in [:todos :sort :direction] direction)
+         (assoc-in [:todos :pagination :page] 1)))))
+
+(rf/reg-event-db
+ ::update-todo-filter
+ (fn [db [_ path value]]
+   (let [normalized (if (= path [:completed])
+                      (let [kw (cond
+                                 (keyword? value) value
+                                 (string? value) (keyword value)
+                                 :else :all)]
+                        (if (#{:all :completed :pending} kw) kw :all))
+                      (or value ""))]
+     (-> db
+         (assoc-in (into [:todos :filters] path) normalized)
+         (assoc-in [:todos :pagination :page] 1)))))
+
+(rf/reg-event-db
+ ::clear-todo-filters
+ (fn [db _]
+   (-> db
+       (assoc-in [:todos :filters] db/default-todo-filters)
+       (assoc-in [:todos :pagination :page] 1))))
+
+(rf/reg-event-db
+ ::set-todo-page
+ (fn [db [_ page]]
+   (let [items (get-in db [:todos :items])
+         per-page (get-in db [:todos :pagination :per-page])]
+     (assoc-in db [:todos :pagination :page]
+               (clamp-page (count items) per-page page)))))
+
+(rf/reg-event-db
+ ::set-todo-per-page
+ (fn [db [_ per-page]]
+   (let [current (get-in db [:todos :pagination :per-page])
+         items (get-in db [:todos :items])
+         new-per (max 1 (parse-int-value per-page current))]
+     (-> db
+         (assoc-in [:todos :pagination :per-page] new-per)
+         (assoc-in [:todos :pagination :page]
+                   (clamp-page (count items) new-per 1))))))
 
 (rf/reg-event-db
  ::open-add-todo-dialog

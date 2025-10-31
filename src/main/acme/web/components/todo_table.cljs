@@ -1,138 +1,86 @@
 (ns acme.web.components.todo-table
   (:require
-   [reagent.core :as r]
    [re-frame.core :as rf]
    [acme.web.events :as events]
    [acme.web.subs :as subs]
-   [acme.web.components.todo-row-actions :refer [todo-row-actions]]
+   [acme.web.components.todo-table.table :as table]
+   [acme.web.components.todo-table.controls :as controls]
    ["@rc-component/table" :default rc-table]))
 
-(def sort-options
-  [{:value :completed :label "Completed"}
-   {:value :created_at :label "Created"}
-   {:value :updated_at :label "Updated"}])
-
-(def direction-options
-  [{:value :asc :label "Ascending"}
-   {:value :desc :label "Descending"}])
-
-(defn- status-pill [completed?]
-  (let [completed? (boolean completed?)]
-    [:span {:class (str "badge "
-                        (if completed?
-                          "badge-success"
-                          "badge-warning"))}
-     (if completed? "Completed" "Pending")]))
-
 (defn todo-table []
-  (let [todos (rf/subscribe [::subs/sorted-todos])
-        loading? (rf/subscribe [::subs/todos-loading?])
+  (let [loading? (rf/subscribe [::subs/todos-loading?])
         error (rf/subscribe [::subs/todos-error])
-        sort-config (rf/subscribe [::subs/todo-sort])]
+        sort-config (rf/subscribe [::subs/todo-sort])
+        filters-config (rf/subscribe [::subs/todo-filters])
+        pagination-config (rf/subscribe [::subs/todo-pagination])]
     (fn []
-      (let [{:keys [field direction]} @sort-config
+      (let [is-loading? @loading?
+            error-message @error
+            {:keys [field direction]} (or @sort-config {})
+            filters (or @filters-config {})
+            {:keys [items page per-page total total-pages start end]}
+            (merge {:items [] :page 1 :per-page 25 :total 0 :total-pages 1 :start 0 :end 0}
+                   (or @pagination-config {}))
             field (or field :created_at)
             direction (or direction :desc)
-            table-data (->> @todos
-                            (map (fn [todo]
-                                   (-> todo
-                                       (assoc :key (str (:id todo)))
-                                       (update :completed boolean))))
-                            (clj->js))
-            columns (clj->js
-                     [{:title "ID"
-                       :dataIndex "id"
-                       :key "id"
-                       :align "left"
-                       :width 90
-                       :render (fn [id _record _index]
-                                 (r/as-element [:span {:class "font-mono text-sm"} id]))}
-                      {:title "Title"
-                       :dataIndex "title"
-                       :key "title"
-                       :align "left"
-                       :className "whitespace-pre-wrap"
-                       :render (fn [title _record _index]
-                                 (r/as-element [:span {:class "text-base-content"} (or title "-")]))}
-                      {:title "Completed"
-                       :dataIndex "completed"
-                       :key "completed"
-                       :align "center"
-                       :width 140
-                       :render (fn [completed _record _index]
-                                 (r/as-element [status-pill completed]))}
-                      {:title "Created"
-                       :dataIndex "created_at"
-                       :key "created_at"
-                       :align "left"
-                       :width 200
-                       :render (fn [created-at _record _index]
-                                 (r/as-element [:span {:class "font-mono text-xs sm:text-sm"}
-                                                (or created-at "-")]))}
-                      {:title "Updated"
-                       :dataIndex "updated_at"
-                       :key "updated_at"
-                       :align "left"
-                       :width 200
-                       :render (fn [updated-at _record _index]
-                                 (r/as-element [:span {:class "font-mono text-xs sm:text-sm"}
-                                                (or updated-at "-")]))}
-                      {:title "Actions"
-                       :key "actions"
-                       :align "right"
-                       :width 180
-                       :render (fn [_ record _index]
-                                 (let [todo (js->clj record :keywordize-keys true)]
-                                   (r/as-element [todo-row-actions (:id todo)])))}])
+            dispatch-sort (fn [target-field target-direction]
+                            (rf/dispatch [::events/set-todo-sort {:field target-field
+                                                                  :direction target-direction}]))
+            columns (table/build-columns {:field field
+                                          :direction direction
+                                          :dispatch-sort dispatch-sort})
+            table-data (table/format-rows items)
             status-section (cond
-                              @loading? [:div {:class "alert alert-info"}
-                                         [:span "Loading todos..."]]
-                              @error [:div {:class "alert alert-error"}
-                                      [:span @error]]
-                              (empty? @todos) [:div {:class "alert alert-warning"}
-                                               [:span "No todos found. Add your first item to get started."]]
-                              :else nil)]
+                             is-loading? [:div {:class "alert alert-info"}
+                                          [:span "Loading todos..."]]
+                             error-message [:div {:class "alert alert-error"}
+                                            [:span error-message]]
+                             (zero? total) [:div {:class "alert alert-warning"}
+                                            [:span "No todos found. Add your first item to get started."]]
+                             :else nil)
+            prev-page (max 1 (dec page))
+            next-page (min total-pages (inc page))
+            can-prev? (> page 1)
+            can-next? (< page total-pages)
+            display-start (if (pos? total) start 0)
+            display-end (if (pos? total) end 0)
+            summary (if (pos? total)
+                      (str "Showing " display-start "-" display-end " of " total " todos")
+                      "No todos to display")
+            pagination-props {:summary summary
+                              :per-page per-page
+                              :page page
+                              :total-pages total-pages
+                              :can-prev? can-prev?
+                              :can-next? can-next?
+                              :prev-page prev-page
+                              :next-page next-page}
+            header-subtext (cond
+                             is-loading? "Fetching the latest todos…"
+                             error-message "We hit a snag retrieving your todos. Try reloading."
+                             (pos? total) summary
+                             :else "Keep track of every task and stay ahead of your work.")]
         [:div {:class "space-y-6"}
-         [:div {:class "flex flex-wrap items-center justify-between gap-4"}
-          [:div {:class "flex flex-wrap items-center gap-3"}
-           [:label {:class "form-control max-w-xs"}
-            [:div {:class "label"}
-             [:span {:class "label-text font-semibold"} "Sort field"]]
-            [:select {:class "select select-bordered select-sm"
-                      :value (name field)
-                      :on-change #(let [value (keyword (.. % -target -value))]
-                                    (rf/dispatch [::events/set-todo-sort {:field value
-                                                                           :direction direction}]))}
-             (for [{:keys [value label]} sort-options]
-               ^{:key (name value)}
-               [:option {:value (name value)} label])]]
-           [:label {:class "form-control max-w-xs"}
-            [:div {:class "label"}
-             [:span {:class "label-text font-semibold"} "Sort direction"]]
-            [:select {:class "select select-bordered select-sm"
-                      :value (name direction)
-                      :on-change #(let [value (keyword (.. % -target -value))]
-                                    (rf/dispatch [::events/set-todo-sort {:field field
-                                                                           :direction value}]))}
-             (for [{:keys [value label]} direction-options]
-               ^{:key (name value)}
-               [:option {:value (name value)} label])]]]
-          [:div {:class "flex flex-wrap gap-3"}
-           [:button {:type "button"
-                     :class "btn btn-outline btn-sm"
-                     :on-click #(rf/dispatch [::events/fetch-todos])}
-            "Reload"]
-           [:button {:type "button"
-                     :class "btn btn-primary btn-sm"
-                     :on-click #(rf/dispatch [::events/open-add-todo-dialog])}
-            "Add Todo"]]]
+         [:section {:class "rounded-sm border border-base-200 bg-gradient-to-r from-base-100 via-base-100 to-base-200/70 p-6 shadow-md"}
+          [:div {:class "flex flex-wrap items-center justify-between gap-4"}
+           [:div {:class "space-y-1"}
+            [:h2 {:class "text-2xl font-semibold text-base-content"} "Todo Overview"]
+            [:p {:class "text-sm text-base-content/70"} header-subtext]]
+           [controls/action-buttons]]
+          [:div {:class "mt-6"}
+           [controls/filter-controls filters]]]
          (when status-section
-           status-section)
-         (when (seq @todos)
-           [:div {:class "rounded-2xl border border-base-200 bg-base-100 shadow-sm"}
+           [:div {:class "rounded-sm border border-base-200 bg-base-100/95 p-5 shadow-sm"}
+            status-section])
+         (when (pos? total)
+           [:div {:class "rounded-sm border border-base-200 bg-base-100 shadow-md overflow-hidden"}
             [:> rc-table {:columns columns
                           :data table-data
                           :rowKey "key"
-                          :className "todo-table"
+                          :className "todo-table text-sm"
+                          :rowClassName (fn [_ _]
+                                          "odd:bg-base-100 even:bg-base-200 transition-colors hover:bg-primary/5 last:[&_td]:border-b-0")
                           :tableLayout "auto"
-                          :scroll #js {:x "max-content"}}]])]))))
+                          :scroll #js {:x "max-content"}}]
+            [:div {:class "border-t border-base-200 bg-base-100/95 px-5 py-4"}
+             [controls/pagination-controls pagination-props]]])]))))

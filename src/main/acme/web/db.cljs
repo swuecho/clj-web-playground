@@ -1,5 +1,10 @@
 (ns acme.web.db)
 
+(def default-todo-filters
+  {:completed :all
+   :created {:after "" :before ""}
+   :updated {:after "" :before ""}})
+
 (def default-db
   {:users []
    :loading? false
@@ -24,6 +29,9 @@
            :pending #{}
            :sort {:field :created_at
                   :direction :desc}
+           :filters default-todo-filters
+           :pagination {:page 1
+                        :per-page 25}
            :add {:visible? false
                  :title ""
                  :completed? false
