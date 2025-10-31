@@ -5,7 +5,10 @@
    [re-frame.core :as rf]
    [acme.web.events :as events]
    [acme.web.subs :as subs]
-   [acme.web.components :as components]
+   [acme.web.components.add-user-dialog :refer [add-user-dialog]]
+   [acme.web.components.edit-user-dialog :refer [edit-user-dialog]]
+   [acme.web.components.toast-banner :refer [toast-banner]]
+   [acme.web.components.user-row-actions :refer [user-row-actions]]
    ["@rc-component/table" :default rc-table]))
 
 (defn users-table
@@ -46,7 +49,7 @@
                                     [:td {:class "align-middle"} name]
                                     [:td {:class "align-middle"} age]
                                     [:td {:class "align-middle text-right"}
-                                     [components/user-row-actions uuid]]])]]]])
+                                     [user-row-actions uuid]]])]]]])
               actions [:div {:class "flex flex-wrap gap-3"}
                        [:button {:type "button"
                                  :class "btn btn-outline"
@@ -57,9 +60,9 @@
                                  :on-click #(rf/dispatch [::events/open-add-user-dialog])}
                         "Add User"]]
               content (cond-> []
-                        include-aux? (conj [components/toast-banner])
-                        include-aux? (conj [components/add-user-dialog])
-                        include-aux? (conj [components/edit-user-dialog])
+                        include-aux? (conj [toast-banner])
+                        include-aux? (conj [add-user-dialog])
+                        include-aux? (conj [edit-user-dialog])
                         title (conj [:h1 {:class "text-2xl font-semibold"} title])
                         true (conj table-section)
                         true (conj actions))]
@@ -159,9 +162,9 @@
                                :on-click #(rf/dispatch [::events/open-add-user-dialog])}
                       "Add User"]]
             content (cond-> []
-                       include-aux? (conj [components/toast-banner])
-                       include-aux? (conj [components/add-user-dialog])
-                       include-aux? (conj [components/edit-user-dialog])
+                       include-aux? (conj [toast-banner])
+                       include-aux? (conj [add-user-dialog])
+                       include-aux? (conj [edit-user-dialog])
                       title (conj [:h1 {:class "users-table-rc__heading text-2xl font-semibold"} title])
                        true (conj table-section)
                        true (conj actions))]
