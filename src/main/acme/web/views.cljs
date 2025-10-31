@@ -9,6 +9,9 @@
    [acme.web.components.edit-user-dialog :refer [edit-user-dialog]]
    [acme.web.components.toast-banner :refer [toast-banner]]
    [acme.web.components.user-row-actions :refer [user-row-actions]]
+   [acme.web.components.todo-add-dialog :refer [todo-add-dialog]]
+   [acme.web.components.todo-edit-dialog :refer [todo-edit-dialog]]
+   [acme.web.components.todo-table :refer [todo-table]]
    ["@rc-component/table" :default rc-table]))
 
 (defn users-table
@@ -126,7 +129,7 @@
                     :render (fn [uuid _record _index]
                               (r/as-element [:div {:class "users-table-rc__actions flex justify-end"}
                                              (when uuid
-                                               [components/user-row-actions uuid])]))}])
+                                               [user-row-actions uuid])]))}])
          wrap-container (fn [content]
                           (if wrap?
                             (into [:div {:class "users-table-rc__container space-y-6"}] content)
@@ -266,9 +269,6 @@
                 {:id :daisy :label "Daisy UI"}]
           active @active-tab]
       [:div {:class "mx-auto max-w-5xl space-y-6 p-6"}
-       [components/toast-banner]
-       [components/add-user-dialog]
-       [components/edit-user-dialog]
        [:div {:class "tabs tabs-boxed flex gap-3"}
         (for [{:keys [id label]} tabs]
           ^{:key (name id)}
@@ -294,5 +294,42 @@
                         :include-aux? false
                         :title nil}])]])))
 
+(defn todo-tab-panel []
+  [:div {:class "mx-auto max-w-5xl space-y-6 p-6"}
+   [:h1 {:class "text-2xl font-semibold"} "Todos"]
+   [todo-table]])
+
+(defn app-tabs []
+  (r/with-let [active-tab (r/atom :users)]
+    (let [tabs [{:id :users :label "Users"}
+                {:id :todos :label "Todos"}]
+          active @active-tab]
+      [:div {:class "space-y-6"}
+       [:div {:class "mx-auto max-w-5xl px-6 pt-6"}
+        [:div {:class "tabs tabs-boxed flex gap-3"}
+         (for [{:keys [id label]} tabs]
+           ^{:key (name id)}
+           (let [active? (= id active)
+                 tab-classes (->> ["tab text-sm font-semibold px-5 py-2 transition-colors duration-150"
+                                   (when active? "tab-active bg-secondary text-secondary-content shadow-sm")
+                                   (when-not active? "text-base-content/70 hover:text-base-content hover:bg-base-200")]
+                                  (remove nil?)
+                                  (str/join " "))]
+             [:button {:type "button"
+                       :class tab-classes
+                       :aria-pressed active?
+                       :aria-current (when active? "page")
+                       :on-click #(reset! active-tab id)}
+              label]))]]
+       (case active
+         :todos [todo-tab-panel]
+         [users-tables-tabs])])))
+
 (defn main-panel []
-  [users-tables-tabs])
+  [:<>
+   [toast-banner]
+   [add-user-dialog]
+   [edit-user-dialog]
+   [todo-add-dialog]
+   [todo-edit-dialog]
+   [app-tabs]])

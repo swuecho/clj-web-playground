@@ -18,6 +18,7 @@
 (defn init []
   (rf/dispatch-sync [::events/initialize])
   (rf/dispatch [::events/fetch-users])
+  (rf/dispatch [::events/fetch-todos])
   (mount-root))
 
 (defn ^:dev/after-load reload! []
