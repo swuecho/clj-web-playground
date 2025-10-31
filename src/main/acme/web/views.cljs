@@ -273,7 +273,7 @@
         (for [{:keys [id label]} tabs]
           ^{:key (name id)}
           (let [active? (= id active)
-                tab-classes (->> ["tab text-sm font-semibold px-5 py-2 transition-colors duration-150"
+                tab-classes (->> ["tab rounded-sm text-sm font-semibold px-5 py-2 transition-colors duration-150"
                                   (when active? "tab-active bg-primary text-primary-content shadow-sm")
                                   (when-not active? "text-base-content/70 hover:text-base-content hover:bg-base-200")]
                                  (remove nil?)
@@ -310,7 +310,7 @@
          (for [{:keys [id label]} tabs]
            ^{:key (name id)}
            (let [active? (= id active)
-                 tab-classes (->> ["tab text-sm font-semibold px-5 py-2 transition-colors duration-150"
+                 tab-classes (->> ["tab text-sm rounded-sm font-semibold px-5 py-2 transition-colors duration-150"
                                    (when active? "tab-active bg-secondary text-secondary-content shadow-sm")
                                    (when-not active? "text-base-content/70 hover:text-base-content hover:bg-base-200")]
                                   (remove nil?)
