@@ -27,7 +27,7 @@
 (def reload-enabled?
   (not (truthy-env? (System/getenv "ACME_DISABLE_RELOAD"))))
 
-(def default-port 8081)
+(def default-port 8082)
 
 (def default-reload-dirs ["src/main" "src/dev"])
 
@@ -219,7 +219,7 @@
 
 (defn -main
   [& [port]]
-  (let [port (some-> port Integer/parseInt)
-        server (start! {:port port})]
-    (println (format "User API listening on http://localhost:%s" (.getPort server)))
+  (let [resolved-port (resolve-port port)
+        server (start! {:port resolved-port})]
+    (println (format "User API listening on http://localhost:%s" resolved-port))
     (.join server)))
