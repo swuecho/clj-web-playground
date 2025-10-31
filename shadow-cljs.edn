@@ -3,7 +3,7 @@
  :dependencies []
  :dev-http {8080 {:root "public"
                   :push-state/index "index.html"
-                  :proxy-url "http://localhost:8081"
+                  :proxy-url "http://localhost:8082"
                   :proxy-predicate acme.dev.proxy/should-proxy?}}
  :builds
  {:web  
