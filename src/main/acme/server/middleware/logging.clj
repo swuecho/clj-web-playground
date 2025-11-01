@@ -11,6 +11,8 @@
 
 (def utf-8 StandardCharsets/UTF_8)
 
+(def max-json-log-length 2048)
+
 (defn- elapsed-ms [started]
   (long (/ (- (System/nanoTime) started) 1000000)))
 
@@ -50,31 +52,50 @@
     :else
     [(pr-str body) body]))
 
+(defn- summarize-json-body [json-body]
+  (when (and json-body (not (str/blank? json-body)))
+    (let [length (count json-body)]
+      (if (<= length max-json-log-length)
+        {:value json-body
+         :length length
+         :truncated? false}
+        {:value (str (subs json-body 0 max-json-log-length)
+                     "... (truncated, total length " length " chars)")
+         :length length
+         :truncated? true}))))
+
 (defn- summarize-request [request json-body]
   (let [method (some-> request :request-method name str/upper-case)
         uri (:uri request)
-        details (cond-> {}
-                   (:query-string request)
-                   (assoc :query-string (:query-string request))
-                   (present-map (:path-params request))
-                   (assoc :path-params (:path-params request))
-                   (present-map (:query-params request))
-                   (assoc :query-params (:query-params request))
-                   (present-map (:body-params request))
-                   (assoc :body-params (:body-params request))
-                   (and json-body (not (str/blank? json-body)))
-                   (assoc :json-body json-body))]
+        json-summary (summarize-json-body json-body)
+        base-details (cond-> {}
+                       (:query-string request)
+                       (assoc :query-string (:query-string request))
+                       (present-map (:path-params request))
+                       (assoc :path-params (:path-params request))
+                       (present-map (:query-params request))
+                       (assoc :query-params (:query-params request))
+                       (present-map (:body-params request))
+                       (assoc :body-params (:body-params request)))
+        details (cond-> base-details
+                  json-summary (assoc :json-body (:value json-summary))
+                  json-summary (assoc :json-body-length (:length json-summary))
+                  (and json-summary (:truncated? json-summary))
+                  (assoc :json-body-truncated? true))]
     {:method method
      :uri uri
      :details details}))
 
 (defn- summarize-response [response elapsed json-body]
-  (let [content-type (get-in response [:headers "Content-Type"])]
+  (let [content-type (get-in response [:headers "Content-Type"])
+        json-summary (summarize-json-body json-body)]
     (cond-> {:status (:status response)
              :elapsed-ms elapsed}
       content-type (assoc :content-type content-type)
-      (and json-body (not (str/blank? json-body)))
-      (assoc :json-body json-body))))
+      json-summary (assoc :json-body (:value json-summary))
+      json-summary (assoc :json-body-length (:length json-summary))
+      (and json-summary (:truncated? json-summary))
+      (assoc :json-body-truncated? true))))
 
 (defn- capture-json-request [request]
   (let [content-type (get-in request [:headers "content-type"])]
