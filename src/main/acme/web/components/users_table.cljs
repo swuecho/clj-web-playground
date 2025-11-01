@@ -1,4 +1,4 @@
-(ns acme.web.components.users_table
+(ns acme.web.components.users-table
   (:require
    [acme.web.components.add-user-dialog :refer [add-user-dialog]]
    [acme.web.components.edit-user-dialog :refer [edit-user-dialog]]

@@ -8,7 +8,7 @@
    [acme.web.components.todo-add-dialog :refer [todo-add-dialog]]
    [acme.web.components.todo-edit-dialog :refer [todo-edit-dialog]]
    [acme.web.components.todo-table :refer [todo-table]]
-   [acme.web.components.users_table :refer [users-table]]
+   [acme.web.components.users-table :refer [users-table]]
    [acme.web.events :as events]
    [acme.web.feature.daisy.demo :refer [daisy-ui-showcase]]
    [clojure.string :as str]
