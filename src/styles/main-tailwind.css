@@ -1,3 +1,46 @@
 @import "tailwindcss";
 @plugin "daisyui";
+@plugin "daisyui/theme" {
+  name: "mgc-light";
+  default: true; /* set as default */
+  prefersdark: false; /* set as default dark mode (prefers-color-scheme:dark) */
+  color-scheme: light; /* color of browser-provided UI */ 
+  /* colors derived from mgc palette */
 
+  --color-base-100: #F7F9FC;
+  --color-base-200: #EDF1F8;
+  --color-base-300: #DFE4ED;
+  --color-base-content: #19222F;
+  --color-primary: #FF711F;
+  --color-primary-content: #FFFFFF;
+  --color-secondary: #007AFF;
+  --color-secondary-content: #FFFFFF;
+  --color-accent: #975AED;
+  --color-accent-content: #FFFFFF;
+  --color-neutral: #3F4A5A;
+  --color-neutral-content: #F7F9FC;
+  --color-info: #0DAACC;
+  --color-info-content: #FFFFFF;
+  --color-success: #28BD6B;
+  --color-success-content: #FFFFFF;
+  --color-warning: #FFD231;
+  --color-warning-content: #10161F;
+  --color-error: #F24E3F;
+  --color-error-content: #FFFFFF;
+
+  /* border radius */
+  --radius-selector: 1rem;
+  --radius-field: 0.25rem;
+  --radius-box: 0.5rem;
+
+  /* base sizes */
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+
+  /* border size */
+  --border: 1px;
+
+  /* effects */
+  --depth: 1;
+  --noise: 0;
+}
