@@ -41,7 +41,7 @@
                        active? "border-primary/40 bg-base-100 text-base-content shadow-sm"
                        :else "border-transparent text-base-content/70 hover:text-base-content hover:bg-base-200/60")
         layout-classes (if collapsed?
-                         "flex flex-col items-center gap-1.5 rounded-lg px-2 py-2"
+                         "flex flex-col items-center gap-1.5 rounded px-2 py-2"
                          "flex items-center gap-2 rounded-lg px-3 py-2")
         icon-classes (if active?
                        "bg-primary text-primary-content shadow-sm"
