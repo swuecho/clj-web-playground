@@ -21,21 +21,27 @@
                      :on-click #(rf/dispatch [::events/close-add-todo-dialog])
                      :disabled @submitting?}
             "✕"]]
-          [:div {:class "grid gap-4"}
-           [:div {:class "form-control"}
-            [:label {:class "label"}
-             [:span {:class "label-text"} "Title"]]
-            [:input {:type "text"
-                     :value @title
-                     :on-change #(rf/dispatch [::events/update-add-todo-field :title (.. % -target -value)])
-                     :class (str "input input-bordered "
-                                 (when (get @errors :title) "input-error"))}]
-            (when-let [title-error (get @errors :title)]
-              [:span {:class "text-error text-sm"} title-error])]
-           [:div {:class "form-control"}
-            [:label {:class "label cursor-pointer justify-start gap-3"}
-             [:span {:class "label-text"} "Completed?"]
-             [:input {:type "checkbox"
+          [:div {:class "space-y-4"}
+           [:div {:class "grid gap-2 sm:grid-cols-[60px_1fr] sm:items-center"}
+            [:label {:for "add-todo-title"
+                     :class "text-sm font-medium text-base-content"}
+             "Title"]
+            [:div {:class "space-y-1"}
+             [:input {:id "add-todo-title"
+                      :type "text"
+                      :value @title
+                      :on-change #(rf/dispatch [::events/update-add-todo-field :title (.. % -target -value)])
+                      :class (str "input input-bordered w-full "
+                                  (when (get @errors :title) "input-error"))}]
+             (when-let [title-error (get @errors :title)]
+               [:span {:class "text-error text-sm"} title-error])]]
+           [:div {:class "grid gap-2 sm:grid-cols-[120px_auto] sm:items-center"}
+            [:label {:for "add-todo-completed"
+                     :class "text-sm font-medium text-base-content"}
+             "Completed?"]
+            [:div {:class "flex items-center"}
+             [:input {:id "add-todo-completed"
+                      :type "checkbox"
                       :checked (boolean @completed?)
                       :on-change #(rf/dispatch [::events/update-add-todo-field :completed? (.. % -target -checked)])
                       :class "toggle toggle-primary"}]]]]

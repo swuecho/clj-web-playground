@@ -21,28 +21,34 @@
                      :on-click #(rf/dispatch [::events/close-add-user-dialog])
                      :disabled @submitting?}
             "✕"]]
-          [:div {:class "grid gap-4"}
-           [:div {:class "form-control"}
-            [:label {:class "label"}
-             [:span {:class "label-text"} "Name"]]
-            [:input {:type "text"
-                     :value @name
-                     :on-change #(rf/dispatch [::events/update-add-user-field :name (.. % -target -value)])
-                     :class (str "input input-bordered "
-                                 (when (get @errors :name) "input-error"))}]
-            (when-let [name-error (get @errors :name)]
-              [:span {:class "text-error text-sm"} name-error])]
-           [:div {:class "form-control"}
-            [:label {:class "label"}
-             [:span {:class "label-text"} "Age"]]
-            [:input {:type "number"
-                     :min 0
-                     :value @age
-                     :on-change #(rf/dispatch [::events/update-add-user-field :age (.. % -target -value)])
-                     :class (str "input input-bordered "
-                                 (when (get @errors :age) "input-error"))}]
-            (when-let [age-error (get @errors :age)]
-              [:span {:class "text-error text-sm"} age-error])]]
+          [:div {:class "space-y-4"}
+           [:div {:class "grid gap-2 sm:grid-cols-[60px_1fr] sm:items-center"}
+            [:label {:for "add-user-name"
+                     :class "text-sm font-medium text-base-content"}
+             "Name"]
+            [:div {:class "space-y-1"}
+             [:input {:id "add-user-name"
+                      :type "text"
+                      :value @name
+                      :on-change #(rf/dispatch [::events/update-add-user-field :name (.. % -target -value)])
+                      :class (str "input input-bordered w-full "
+                                  (when (get @errors :name) "input-error"))}]
+             (when-let [name-error (get @errors :name)]
+               [:span {:class "text-error text-sm"} name-error])]]
+           [:div {:class "grid gap-2 sm:grid-cols-[60px_1fr] sm:items-center"}
+            [:label {:for "add-user-age"
+                     :class "text-sm font-medium text-base-content"}
+             "Age"]
+            [:div {:class "space-y-1"}
+             [:input {:id "add-user-age"
+                      :type "number"
+                      :min 0
+                      :value @age
+                      :on-change #(rf/dispatch [::events/update-add-user-field :age (.. % -target -value)])
+                      :class (str "input input-bordered w-full "
+                                  (when (get @errors :age) "input-error"))}]
+             (when-let [age-error (get @errors :age)]
+               [:span {:class "text-error text-sm"} age-error])]]]
           [:div {:class "modal-action"}
            [:button {:type "button"
                      :class "btn btn-ghost"
