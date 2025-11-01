@@ -51,12 +51,12 @@
          [:div {:class "flex min-h-screen flex-col md:flex-row"}
           [sidebar/sidebar {:active-id @active
                              :on-select #(reset! active %)}]
-          [:main {:class "flex-1 overflow-y-auto"}
-           [:div {:class "mx-auto w-full max-w-6xl px-6 py-10 space-y-10"}
+          [:main {:class "flex-1 min-h-0"}
+           [:div {:class "mx-auto flex h-full max-h-screen flex-col gap-10 overflow-y-auto px-6 py-10"}
             [:header {:class "flex flex-wrap items-center justify-between gap-4"}
-             [:div {:class "space-y-1"}
-              [:p {:class "text-xs font-semibold uppercase tracking-wide text-base-content/60"}
-               "Workspace"]
+              [:div {:class "space-y-1"}
+               [:p {:class "text-xs font-semibold uppercase tracking-wide text-base-content/60"}
+                "Workspace"]
               [:h1 {:class "text-3xl font-semibold text-base-content"} (or label "Overview")]
               (when description
                 [:p {:class "text-sm text-base-content/70"} description])]]
