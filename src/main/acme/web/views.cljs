@@ -334,23 +334,23 @@
   [{:keys [id label description icon icon-text accent disabled?]} active-id on-select]
   (let [active? (= id active-id)
         base-classes (cond
-                       disabled? "cursor-not-allowed opacity-60"
-                       active? "bg-primary text-primary-content shadow-lg"
-                       :else "text-base-content/70 hover:text-base-content hover:bg-base-200/70")
+                       disabled? "border-transparent text-base-content/40 cursor-not-allowed opacity-60"
+                       active? "border-primary/40 bg-base-100 text-base-content shadow-sm"
+                       :else "border-transparent text-base-content/70 hover:text-base-content hover:bg-base-200/60")
         icon-classes (if active?
-                       "bg-primary/30 text-primary-content"
+                       "bg-primary text-primary-content shadow-sm"
                        (or accent "bg-base-200 text-base-content/70"))
         icon-label (or icon-text (some-> label (subs 0 1) str/upper-case))]
     [:button {:type "button"
-              :class (str "group flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-semibold transition-all duration-150 "
+              :class (str "group relative flex w-full items-center gap-3 rounded border px-4 py-3 text-left text-sm font-semibold transition-colors duration-150 "
                           base-classes)
               :on-click #(when-not disabled? (on-select id))
               :disabled disabled?}
-      [:span {:class (str "flex h-9 w-9 items-center justify-center rounded-xl text-xs font-semibold tracking-wide "
+     [:span {:class (str "flex h-9 w-9 items-center justify-center rounded-lg text-xs font-semibold tracking-wide transition-colors duration-150 "
                           icon-classes)}
-       (or icon icon-label)]
-     [:span {:class (str "text-sm font-semibold "
-                         (if active? "text-primary-content" "text-base-content"))}
+      (or icon icon-label)]
+     [:span {:class (str "text-sm font-semibold transition-colors duration-150 "
+                         (if active? "text-base-content" "text-base-content"))}
       label]]))
 
 (defn metric-card [{:keys [title value subtext badge badge-variant]}]
