@@ -19,3 +19,12 @@
 
 (defn demo-icon []
   (icon "demo.svg"))
+
+(defn delete-2-icon []
+  (icon "delete_2.svg"))
+
+(defn edit-2-icon []
+  (icon "edit_2.svg"))
+
+(defn eye-icon []
+  (icon "eye.svg"))

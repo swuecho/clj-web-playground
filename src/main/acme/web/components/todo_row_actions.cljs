@@ -3,7 +3,8 @@
    [re-frame.core :as rf]
    [acme.web.events :as events]
    [acme.web.subs :as subs]
-   [acme.web.components.action-button :as action-button]))
+   [acme.web.components.action-button :as action-button]
+   [acme.web.components.icons :as icons]))
 
 (defn todo-row-actions [todo-id]
   (let [id-str (some-> todo-id str)
@@ -11,11 +12,14 @@
     (fn [todo-id]
       (let [id-str (some-> todo-id str)]
         [:div {:class "flex flex-wrap justify-end gap-2"}
-         [action-button/action-button {:label "Edit"
-                                       :variant :primary
+         [action-button/action-button {:label [icons/edit-2-icon]
+                                       :variant :default
+                                       :aria-label "Edit todo"
+                                       :title "Edit todo"
                                        :on-click #(rf/dispatch [::events/open-edit-todo-dialog id-str])}]
-         [action-button/action-button {:label (if @pending? "Deleting..." "Delete")
-                                       :variant :danger
+         [action-button/action-button {:label [icons/delete-2-icon]
+                                       :aria-label (if @pending? "Deleting..." "Delete")
+                                       :variant :default
                                        :disabled? @pending?
                                        :on-click #(when (and (not @pending?)
                                                              (js/confirm "Delete this todo?"))
