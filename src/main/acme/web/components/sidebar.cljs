@@ -42,7 +42,7 @@
                        :else "border-transparent text-base-content/70 hover:text-base-content hover:bg-base-200/60")
         layout-classes (if collapsed?
                          "flex flex-col items-center gap-1.5 rounded px-2 py-2"
-                         "flex items-center gap-2 rounded-lg px-3 py-2")
+                         "flex items-center gap-2 rounded px-3 py-2")
         icon-classes (if active?
                        "bg-primary text-primary-content shadow-sm"
                        (or accent "bg-base-200 text-base-content/70"))
@@ -55,7 +55,7 @@
                        (str label " — " description)
                        label)
               :disabled disabled?}
-     [:span {:class (str "flex h-9 w-9 items-center justify-center rounded-lg text-xs font-semibold tracking-wide transition-colors duration-150 "
+     [:span {:class (str "flex h-9 w-9 items-center justify-center rounded text-xs font-semibold tracking-wide transition-colors duration-150 "
                          icon-classes)}
       (or icon icon-label)]
      (when-not collapsed?
@@ -63,25 +63,29 @@
                            (if active? "text-base-content" "text-base-content"))}
         label])]))
 
+(defn- collapse-toggle-icon [collapsed?]
+  [:svg {:xmlns "http://www.w3.org/2000/svg"
+         :viewBox "0 0 24 24"
+         :fill "none"
+         :stroke "currentColor"
+         :stroke-width "2"
+         :stroke-linecap "round"
+         :stroke-linejoin "round"
+         :class "h-4 w-4"}
+   [:polyline {:points (if collapsed?
+                        "10 18 16 12 10 6"
+                        "14 6 8 12 14 18")}]])
+
+
 (defn- collapse-toggle-button [collapsed? toggle!]
   [:button {:type "button"
-            :class "flex h-9 w-9 items-center justify-center rounded-lg border border-base-200 bg-base-100 text-base-content/70 transition-colors duration-150 hover:border-base-300 hover:bg-base-200/70"
+            :class "flex h-9 w-9 items-center justify-center rounded border border-base-200 bg-base-100 text-base-content/70 transition-colors duration-150 hover:border-base-300 hover:bg-base-200/70"
             :title (if collapsed? "Expand sidebar" "Collapse sidebar")
             :on-click toggle!}
-   [:svg {:xmlns "http://www.w3.org/2000/svg"
-          :viewBox "0 0 24 24"
-          :fill "none"
-          :stroke "currentColor"
-          :stroke-width "2"
-          :stroke-linecap "round"
-          :stroke-linejoin "round"
-          :class "h-4 w-4"}
-    [:polyline {:points (if collapsed?
-                         "10 18 16 12 10 6"
-                         "14 6 8 12 14 18")}]]])
+   [collapse-toggle-icon collapsed?]])
 
 (defn- help-card []
-  [:div {:class "rounded-2xl border border-base-200 bg-base-100 px-4 py-3 text-sm text-base-content/60"}
+  [:div {:class "rounded border border-base-200 bg-base-100 px-4 py-3 text-sm text-base-content/60"}
    [:p {:class "font-semibold text-base-content"} "Need help?"]
    [:p {:class "text-sm"}
     "Visit the docs directory for setup guides and API references."]])
@@ -89,9 +93,6 @@
 (defn- sidebar-footer [collapsed? toggle!]
   (if collapsed?
     [:div {:class "mt-auto flex w-full items-center justify-center gap-3"}
-     [:div {:class "flex h-10 w-10 items-center justify-center rounded-xl border border-base-200 bg-base-100 text-base-content/60"
-            :title "Need help? Visit the docs directory for setup guides and API references."}
-      "?"]
      [collapse-toggle-button collapsed? toggle!]]
     [:div {:class "mt-auto w-full space-y-3"}
      [help-card]
@@ -112,7 +113,7 @@
                             (when collapsed "items-center px-3"))}
           [:div {:class (str "flex items-center gap-3 "
                               (when collapsed "justify-center"))}
-           [:div {:class "flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-lg font-semibold text-primary-content"}
+           [:div {:class "flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-lg font-semibold text-primary-content"}
             "AC"]
            (when-not collapsed
              [:div
