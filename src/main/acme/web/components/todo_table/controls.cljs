@@ -105,7 +105,7 @@
                             (rf/dispatch [::events/set-todo-page prev-page]))}
       "Prev"]
      [:span {:class "text-sm font-medium text-base-content/80"}
-      (str "Page " page " of " total-pages)]
+      (str page " of " total-pages)]
      [:button {:type "button"
                :class "btn btn-outline btn-sm"
                :disabled (not can-next?)
