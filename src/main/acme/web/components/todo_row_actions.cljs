@@ -13,10 +13,10 @@
         [:div {:class "flex flex-wrap justify-end gap-2"}
          [action-button/action-button {:label "Edit"
                                        :variant :primary
-                                       :on-click #(rf/dispatch [::events/open-edit-todo-dialog todo-id])}]
+                                       :on-click #(rf/dispatch [::events/open-edit-todo-dialog id-str])}]
          [action-button/action-button {:label (if @pending? "Deleting..." "Delete")
                                        :variant :danger
                                        :disabled? @pending?
                                        :on-click #(when (and (not @pending?)
                                                              (js/confirm "Delete this todo?"))
-                                                    (rf/dispatch [::events/delete-todo todo-id]))}]]))))
+                                                    (rf/dispatch [::events/delete-todo id-str]))}]]))))
