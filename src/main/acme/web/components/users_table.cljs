@@ -7,7 +7,12 @@
    [acme.web.events :as events]
    [acme.web.subs :as subs]
    [re-frame.core :as rf]))
+;users-table is defined with two arities so callers can ask for either the default rendering or pass custom options. The zero-argument form
+;  just delegates to the single-argument version with an empty map:
 
+;  (defn users-table
+;    ([] (users-table {}))   ;; zero-arity → default options
+;    ([opts] ...))           ;; handles the real work
 (defn users-table
   ([] (users-table {}))
   ([opts]
