@@ -1,4 +1,4 @@
-(ns acme.web.components.icons)
+(ns acme.web.components.base.icons)
 
 (def ^:private icon-attrs
   {:class "h-5 w-5"

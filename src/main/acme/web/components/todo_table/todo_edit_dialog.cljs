@@ -1,4 +1,4 @@
-(ns acme.web.components.todo-edit-dialog
+(ns acme.web.components.todo-table.todo-edit-dialog
   (:require
    [re-frame.core :as rf]
    [acme.web.events :as events]

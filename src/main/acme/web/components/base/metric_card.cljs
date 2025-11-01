@@ -1,4 +1,4 @@
-(ns acme.web.components.metric-card)
+(ns acme.web.components.base.metric-card)
 
 (defn metric-card [{:keys [title value subtext badge badge-variant]}]
   [:div {:class "rounded-xl border border-base-200 bg-base-100/95 p-5 shadow-sm"}

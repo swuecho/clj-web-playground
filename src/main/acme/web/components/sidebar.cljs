@@ -1,6 +1,6 @@
 (ns acme.web.components.sidebar
   (:require
-   [acme.web.components.icons :as icons]
+   [acme.web.components.base.icons :as icons]
    [clojure.string :as str]
    [reagent.core :as r]))
 

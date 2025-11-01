@@ -1,9 +1,9 @@
 (ns acme.web.components.users-table
   (:require
-   [acme.web.components.add-user-dialog :refer [add-user-dialog]]
-   [acme.web.components.edit-user-dialog :refer [edit-user-dialog]]
    [acme.web.components.toast-banner :refer [toast-banner]]
-   [acme.web.components.user-row-actions :refer [user-row-actions]]
+   [acme.web.components.user-table.add-user-dialog :refer [add-user-dialog]]
+   [acme.web.components.user-table.edit-user-dialog :refer [edit-user-dialog]]
+   [acme.web.components.user-table.user-row-actions :refer [user-row-actions]]
    [acme.web.events :as events]
    [acme.web.subs :as subs]
    [re-frame.core :as rf]))

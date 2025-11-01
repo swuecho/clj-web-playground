@@ -1,6 +1,6 @@
 (ns acme.web.components.overview-panel
   (:require
-   [acme.web.components.metric-card :refer [metric-card]]
+   [acme.web.components.base.metric-card :refer [metric-card]]
    [acme.web.subs :as subs]
    [clojure.string :as str]
    [re-frame.core :as rf]))

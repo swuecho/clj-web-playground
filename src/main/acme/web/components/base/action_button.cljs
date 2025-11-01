@@ -1,4 +1,4 @@
-(ns acme.web.components.action-button)
+(ns acme.web.components.base.action-button)
 
 (defn action-button
   [{:keys [label variant on-click disabled? aria-label title]}]

@@ -1,4 +1,4 @@
-(ns acme.web.components.user-row-actions
+(ns acme.web.components.user-table.user-row-actions
   (:require
    [re-frame.core :as rf]
    [acme.web.events :as events]

@@ -1,4 +1,4 @@
-(ns acme.web.components.add-user-dialog
+(ns acme.web.components.user-table.add-user-dialog
   (:require
    [re-frame.core :as rf]
    [acme.web.events :as events]

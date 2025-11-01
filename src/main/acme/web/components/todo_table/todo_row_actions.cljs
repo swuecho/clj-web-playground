@@ -1,9 +1,9 @@
-(ns acme.web.components.todo-row-actions
+(ns acme.web.components.todo-table.todo-row-actions
   (:require
    [re-frame.core :as rf]
    [acme.web.events :as events]
    [acme.web.subs :as subs]
-   [acme.web.components.action-button :as action-button]
+   [acme.web.components.base.action-button :as action-button]
    [acme.web.components.icons :as icons]))
 
 (defn todo-row-actions [todo-id]
