@@ -544,29 +544,7 @@
               [:h1 {:class "text-3xl font-semibold text-base-content"} (or label "Overview")]
               (when description
                 [:p {:class "text-sm text-base-content/70"} description])]
-             (let [actions (case @active
-                             :users [{:label "Add User"
-                                      :primary? true
-                                      :on-click #(rf/dispatch [::events/open-add-user-dialog])}]
-                             :todos [{:label "New Todo"
-                                      :primary? true
-                                      :on-click #(rf/dispatch [::events/open-add-todo-dialog])}]
-                             :overview [{:label "New Todo"
-                                         :primary? true
-                                         :on-click #(rf/dispatch [::events/open-add-todo-dialog])}
-                                        {:label "Add User"
-                                         :primary? false
-                                         :on-click #(rf/dispatch [::events/open-add-user-dialog])}]
-                             :demo []
-                             nil)]
-               (when (seq actions)
-                 [:div {:class "flex flex-wrap gap-2"}
-                  (for [{:keys [label primary? on-click]} actions]
-                    ^{:key label}
-                    [:button {:type "button"
-                              :class (str "btn btn-sm " (if primary? "btn-primary" "btn-outline"))
-                              :on-click on-click}
-                     label])]))]
+             ]
             [:div {:class "space-y-10"}
              (case @active
                :overview [overview-panel {:on-view-users #(reset! active :users)
