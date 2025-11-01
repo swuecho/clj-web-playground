@@ -6,6 +6,11 @@
 - Development tooling and build hooks reside in `src/dev`, shared styling sources in `src/styles`, and compiled/public assets in `public` (`index.html`, `css/`, `js/manifest.edn`).
 - Reference docs and deep dives are stored in `docs/`; add new topic-specific guides here.
 
+## UI 
+
+- should follow existing style
+- when user rounded, do not use round beyound rounded unless requested.
+
 ## Build, Test, and Development Commands
 - `npm run backend` – start the Integrant-backed API server (defaults to port 8081, honors `PORT`).
 - `npm run frontend` – launch `shadow-cljs watch web` with the Tailwind/Sass build hook.
@@ -23,11 +28,3 @@
 - Until a dedicated test alias is added, exercise tests via the REPL (`npm run repl`) or targeted `clj -X` invocations inside your test namespaces.
 - For backend additions, provide Malli schemas and handler-level tests that cover expected validation failures and success paths; mirror API behavior using `docs/todo-api.md` payloads.
 
-## Commit & Pull Request Guidelines
-- Base your commit messages on the existing history: short imperative subjects (`Refactor user handling`, `Add user schema…`) with optional descriptive bodies.
-- Squash WIP commits before opening a PR and ensure each change stands on its own with passing builds.
-- PRs should describe the change, link related issues, call out schema/API updates, and include screenshots or curl snippets for UI/API tweaks.
-
-## Security & Configuration Tips
-- Store secrets via environment variables: `DATABASE_URL` for Postgres, `ACME_DISABLE_RELOAD=true` when disabling dev hot-reload, and project-specific ports as needed.
-- Never commit `.env` files or database credentials; document required vars in `docs/` if clarification is needed.
