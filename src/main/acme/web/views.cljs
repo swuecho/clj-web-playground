@@ -347,14 +347,14 @@
               :on-click #(when-not disabled? (on-select id))
               :disabled disabled?}
      [:span {:class (str "flex h-9 w-9 items-center justify-center rounded-lg text-xs font-semibold tracking-wide transition-colors duration-150 "
-                          icon-classes)}
+                         icon-classes)}
       (or icon icon-label)]
      [:span {:class (str "text-sm font-semibold transition-colors duration-150 "
                          (if active? "text-base-content" "text-base-content"))}
       label]]))
 
 (defn metric-card [{:keys [title value subtext badge badge-variant]}]
-  [:div {:class "rounded-3xl border border-base-200 bg-base-100/95 p-5 shadow-sm"}
+  [:div {:class "rounded-xl border border-base-200 bg-base-100/95 p-5 shadow-sm"}
    [:div {:class "flex items-center justify-between gap-3"}
     [:p {:class "text-xs font-semibold uppercase tracking-wide text-base-content/60"} title]
     (when badge
@@ -407,7 +407,7 @@
                         :value (str pending)
                         :subtext "Waiting for completion"}]]
          [:div {:class "grid gap-6 lg:grid-cols-2"}
-          [:section {:class "rounded-3xl border border-base-200 bg-base-100/95 p-6 shadow-sm"}
+          [:section {:class "rounded-xl border border-base-200 bg-base-100/95 p-6 shadow-sm"}
            [:div {:class "flex items-center justify-between gap-3"}
             [:div
              [:h3 {:class "text-lg font-semibold text-base-content"} "Recent Users"]
@@ -427,7 +427,7 @@
                        short (short-id uuid)
                        display-age (when age (str age " yrs"))]
                    ^{:key (or uuid idx)}
-                   [:div {:class "flex items-center justify-between gap-3 rounded-2xl border border-base-200 bg-base-100/90 px-4 py-3"}
+                   [:div {:class "flex items-center justify-between gap-3 rounded-xl border border-base-200 bg-base-100/90 px-4 py-3"}
                     [:div {:class "flex items-center gap-3"}
                      [:div {:class "flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-base font-semibold text-primary"}
                       initial]
@@ -441,7 +441,7 @@
                recent-users)
               [:div {:class "rounded-2xl border border-dashed border-base-200 bg-base-100/60 px-4 py-6 text-center text-sm text-base-content/60"}
                "No users available yet."])]]
-          [:section {:class "rounded-3xl border border-base-200 bg-base-100/95 p-6 shadow-sm"}
+          [:section {:class "rounded-xl border border-base-200 bg-base-100/95 p-6 shadow-sm"}
            [:div {:class "flex items-center justify-between gap-3"}
             [:div
              [:h3 {:class "text-lg font-semibold text-base-content"} "Todo Highlights"]
@@ -543,8 +543,7 @@
                "Workspace"]
               [:h1 {:class "text-3xl font-semibold text-base-content"} (or label "Overview")]
               (when description
-                [:p {:class "text-sm text-base-content/70"} description])]
-             ]
+                [:p {:class "text-sm text-base-content/70"} description])]]
             [:div {:class "space-y-10"}
              (case @active
                :overview [overview-panel {:on-view-users #(reset! active :users)
@@ -552,7 +551,7 @@
                :users [users-panel]
                :todos [todos-panel]
                :demo [daisy-ui-showcase]
-               [:div {:class "rounded-3xl border border-dashed border-base-300 bg-base-100/60 p-16 text-center text-base-content/60"}
+               [:div {:class "rounded-xl border border-dashed border-base-300 bg-base-100/60 p-16 text-center text-base-content/60"}
                 "Section coming soon."])]]]]]))))
 
 (defn main-panel []
