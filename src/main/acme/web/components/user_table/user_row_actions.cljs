@@ -3,8 +3,8 @@
    [re-frame.core :as rf]
    [acme.web.events :as events]
    [acme.web.subs :as subs]
-   [acme.web.components.action-button :as action-button]
-   [acme.web.components.icons :as icons]))
+   [acme.web.components.base.action-button :as action-button]
+   [acme.web.components.base.icons :as icons]))
 
 (defn user-row-actions [uuid]
   (let [pending? (rf/subscribe [::subs/delete-pending? uuid])]

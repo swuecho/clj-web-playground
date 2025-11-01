@@ -90,8 +90,6 @@
    [:div {:class "text-sm font-medium text-base-content/70"} summary]
    [:div {:class "flex flex-wrap items-center gap-3"}
     [:div {:class "form-control w-full sm:w-32"}
-     [:label {:class "label"}
-      [:span {:class "label-text font-semibold"} "Per Page"]]
      [:select {:class "select select-bordered select-sm"
                :value (str per-page)
                :on-change #(rf/dispatch [::events/set-todo-per-page
