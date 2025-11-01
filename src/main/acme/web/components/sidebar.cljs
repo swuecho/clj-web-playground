@@ -42,7 +42,7 @@
                        :else "border-transparent text-base-content/70 hover:text-base-content hover:bg-base-200/60")
         layout-classes (if collapsed?
                          "flex flex-col items-center gap-2 rounded-xl px-2 py-3"
-                         "flex items-start gap-3 rounded-xl px-3 py-3")
+                         "flex items-center gap-3 rounded-xl px-3 py-3")
         icon-classes (if active?
                        "bg-primary text-primary-content shadow-sm"
                        (or accent "bg-base-200 text-base-content/70"))
@@ -51,42 +51,35 @@
               :class (str "group relative w-full border text-left text-sm font-semibold transition-all duration-200 "
                           layout-classes " " base-classes)
               :on-click #(when-not disabled? (on-select id))
-              :title label
+              :title (if (seq description)
+                       (str label " — " description)
+                       label)
               :disabled disabled?}
      [:span {:class (str "flex h-10 w-10 items-center justify-center rounded-xl text-xs font-semibold tracking-wide transition-colors duration-150 "
                          icon-classes)}
       (or icon icon-label)]
      (when-not collapsed?
-       [:span {:class "flex flex-col text-left"}
-        [:span {:class (str "text-sm font-semibold transition-colors duration-150 "
-                            (if active? "text-base-content" "text-base-content"))}
-         label]
-        (when (seq description)
-          [:span {:class "text-xs font-medium text-base-content/60"}
-           description])])]))
+       [:span {:class (str "text-sm font-semibold transition-colors duration-150 "
+                           (if active? "text-base-content" "text-base-content"))}
+        label])]))
 
 (defn- collapse-toggle-button [collapsed? toggle!]
   [:button {:type "button"
-            :class "group relative mt-auto flex h-10 w-full items-center justify-between rounded-xl border border-base-200 bg-base-100 px-3 text-sm font-semibold text-base-content/70 transition-colors duration-150 hover:border-base-300 hover:text-base-content"
+            :class (str "mt-auto flex h-10 w-10 items-center justify-center rounded-xl border border-base-200 bg-base-100 text-base-content/70 transition-colors duration-150 hover:border-base-300 hover:bg-base-200/70 "
+                        (if collapsed? "self-center" "self-end"))
             :title (if collapsed? "Expand sidebar" "Collapse sidebar")
             :on-click toggle!}
-   [:span {:class (str "flex h-9 w-9 items-center justify-center rounded-lg text-xs font-semibold "
-                       (if collapsed?
-                         "bg-base-200 text-base-content/70"
-                         "bg-primary/10 text-primary"))}
-    [:svg {:xmlns "http://www.w3.org/2000/svg"
-           :viewBox "0 0 24 24"
-           :fill "none"
-           :stroke "currentColor"
-           :stroke-width "2"
-           :stroke-linecap "round"
-           :stroke-linejoin "round"
-           :class "h-4 w-4"}
-     [:polyline {:points (if collapsed?
-                          "10 18 16 12 10 6"
-                          "14 6 8 12 14 18")}]]]
-   (when-not collapsed?
-     [:span {:class "text-sm font-semibold"} "Collapse"])])
+   [:svg {:xmlns "http://www.w3.org/2000/svg"
+          :viewBox "0 0 24 24"
+          :fill "none"
+          :stroke "currentColor"
+          :stroke-width "2"
+          :stroke-linecap "round"
+          :stroke-linejoin "round"
+          :class "h-4 w-4"}
+    [:polyline {:points (if collapsed?
+                         "10 18 16 12 10 6"
+                         "14 6 8 12 14 18")}]]])
 
 (defn sidebar [{:keys [active-id on-select]}]
   (r/with-let [collapsed? (r/atom false)]
