@@ -28,3 +28,7 @@
 
 (defn eye-icon []
   (icon "eye.svg"))
+
+(defn presentation-icon []
+  (icon "presentation_2.svg"))
+

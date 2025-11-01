@@ -8,7 +8,7 @@
   [{:id :overview
     :label "Overview"
     :description "Workspace snapshot and quick actions"
-    :icon [icons/overview-icon]
+    :icon [icons/presentation-icon]
     :icon-text "OV"
     :accent "bg-primary/10 text-primary"}
    {:id :users
