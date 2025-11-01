@@ -1,6 +1,4 @@
-(ns acme.web.feature.daisy-ui-demo.demo)
-
-
+(ns acme.web.feature.daisy.demo)
 
 (defn daisy-ui-button-showcase []
   [:div {:class "flex flex-wrap gap-3"}
