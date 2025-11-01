@@ -342,7 +342,7 @@
                        (or accent "bg-base-200 text-base-content/70"))
         icon-label (or icon-text (some-> label (subs 0 1) str/upper-case))]
     [:button {:type "button"
-              :class (str "group relative flex w-full items-center gap-3 rounded border px-4 py-3 text-left text-sm font-semibold transition-colors duration-150 "
+              :class (str "group relative flex w-full items-center gap-3 rounded border px-2 py-2 text-left text-sm font-semibold transition-colors duration-150 "
                           base-classes)
               :on-click #(when-not disabled? (on-select id))
               :disabled disabled?}
@@ -527,7 +527,7 @@
               [:p {:class "text-xs font-semibold uppercase tracking-wide text-base-content/60"} "Acme"]
               [:p {:class "text-lg font-semibold text-base-content"} "Control Center"]]]
             (let [active-id @active]
-              [:nav {:class "flex-1 space-y-3"}
+              [:nav {:class "flex-1 space-y-1"}
                (for [item sidebar-nav-items]
                  ^{:key (:id item)}
                  [sidebar-nav-button item active-id #(reset! active %)])])
