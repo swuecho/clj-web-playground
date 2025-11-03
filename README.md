@@ -25,3 +25,10 @@ To manage the system from a REPL load `repl` (the dev helper namespace) and call
 - The dev HTTP server at `http://localhost:8080` serves `public/index.html` and forwards `/api/*` calls to the backend via the proxy predicate in `shadow-cljs.edn`.
 
 With both processes running you can interact with the UI locally without relying on the previously proxied external host.
+
+## Deployment (Docker)
+
+- Build the production image with `docker build -t acme-app .`. The build stage runs `npm run build` so the generated assets in `public/` are bundled with the server.
+- Run the container with `docker run -p 8080:8080 acme-app`; override the listen port via `-e PORT=<port>` if you need something other than the default 8080.
+- The backend serves both the API and the compiled frontend assets from the same Jetty process. Reload middleware is disabled in the image via `ACME_DISABLE_RELOAD=1`.
+- Use `docker compose up --build` to build and run the single-container stack; the service respects `PORT` and will fall back to the server’s default database settings unless you override `DATABASE_URL`.
