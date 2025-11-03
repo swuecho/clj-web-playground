@@ -40,22 +40,24 @@
                        disabled? "border-transparent text-base-content/40 cursor-not-allowed opacity-60"
                        active? "border-primary/40 bg-base-100 text-base-content shadow-sm"
                        :else "border-transparent text-base-content/70 hover:text-base-content hover:bg-base-200/60")
+        width-class (if collapsed? "w-12" "w-full")
         layout-classes (if collapsed?
-                         "flex flex-col items-center gap-1.5 rounded px-2 py-2"
+                         "flex h-12 items-center justify-center rounded p-2"
                          "flex items-center gap-2 rounded px-3 py-2")
         icon-classes (if active?
                        "bg-primary text-primary-content shadow-sm"
                        (or accent "bg-base-200 text-base-content/70"))
         icon-label (or icon-text (some-> label (subs 0 1) str/upper-case))]
     [:button {:type "button"
-              :class (str "group relative w-full border text-left text-sm font-semibold transition-all duration-200 "
+              :class (str "group relative border text-left text-sm font-semibold transition-all duration-200 "
+                          width-class " "
                           layout-classes " " base-classes)
               :on-click #(when-not disabled? (on-select id))
               :title (if (seq description)
                        (str label " — " description)
                        label)
               :disabled disabled?}
-     [:span {:class (str "flex h-9 w-9 items-center justify-center rounded text-xs font-semibold tracking-wide transition-colors duration-150 "
+     [:span {:class (str "flex aspect-square h-9 w-9 shrink-0 items-center justify-center rounded text-xs font-semibold tracking-wide transition-colors duration-150 "
                          icon-classes)}
       (or icon icon-label)]
      (when-not collapsed?
@@ -106,11 +108,11 @@
             toggle! #(swap! collapsed? not)]
         [:aside {:class (str "w-full shrink-0 border-b border-base-200 bg-base-100/95 transition-all duration-200 ease-in-out "
                              (if collapsed
-                               "md:w-24"
+                               "md:w-20"
                                "md:w-72")
                              " md:border-b-0 md:border-r")}
          [:div {:class (str "flex h-full min-h-0 flex-col gap-6 px-4 py-6 "
-                            (when collapsed "items-center px-3"))}
+                            (when collapsed "items-center px-2"))}
           [:div {:class (str "flex items-center gap-3 "
                               (when collapsed "justify-center"))}
            [:div {:class "flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-lg font-semibold text-primary-content"}
@@ -119,8 +121,10 @@
              [:div
               [:p {:class "text-xs font-semibold uppercase tracking-wide text-base-content/60"} "Acme"]
               [:p {:class "text-lg font-semibold text-base-content"} "Control Center"]])]
-          [:nav {:class (str "flex-1 min-h-0 space-y-1 overflow-y-auto pr-1 "
-                              (when collapsed "w-full"))}
+          [:nav {:class (str "flex-1 min-h-0 space-y-1 pr-1 "
+                             (if collapsed
+                               "w-full"
+                               "overflow-y-auto"))}
            (for [item sidebar-nav-items]
              ^{:key (:id item)}
              [nav-button item active-id on-select collapsed])]
