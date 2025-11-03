@@ -162,7 +162,7 @@
              (not (cstr/starts-with? uri "/api"))
              (not (cstr/starts-with? uri "/openapi"))
              (not (cstr/starts-with? uri "/docs")))
-    (when-let [index (response/resource-response "index.html" {:root static-asset-root})]
+    (when-let [index (response/file-response "index.html" {:root static-asset-root})]
       (response/content-type index "text/html; charset=utf-8"))))
 
 (def handler
@@ -171,7 +171,7 @@
     router
     (ring/routes
      swagger-ui-handler
-     (ring/create-resource-handler {:path "/" :root static-asset-root})
+     (ring/create-file-handler {:path "/" :root static-asset-root})
      spa-index-handler
      (ring/redirect-trailing-slash-handler)
      (ring/create-default-handler
