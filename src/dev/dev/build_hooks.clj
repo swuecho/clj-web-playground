@@ -90,9 +90,11 @@
       (compile-sass!))
     (compile-tailwind! mode)
     (let [watch-config (get-in build-state [:shadow.build/config :watch?])
-          watch-mode? (if (some? watch-config)
-                        (true? watch-config)
-                        (:watch? opts true))]
-      (when watch-mode?
-        (start-watcher! opts)))
+          watch-mode? (and (= mode :dev)
+                           (if (some? watch-config)
+                             (true? watch-config)
+                             (:watch? opts true)))]
+      (if watch-mode?
+        (start-watcher! opts)
+        (stop-watcher!)))
     build-state))

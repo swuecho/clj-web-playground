@@ -18,7 +18,8 @@
    [reitit.openapi :as openapi]
    [reitit.swagger-ui :as swagger-ui]
    [ring.adapter.jetty :as jetty]
-   [ring.middleware.reload :refer [wrap-reload]]))
+   [ring.middleware.reload :refer [wrap-reload]]
+   [ring.util.response :as response]))
 
 (defn- truthy-env? [value]
   (contains? #{"1" "true" "yes" "on"}
@@ -30,6 +31,8 @@
 (def default-port 8082)
 
 (def default-reload-dirs ["src/main" "src/dev"])
+
+(def static-asset-root "public")
 
 (defn- parse-port [value]
   (cond
@@ -153,12 +156,23 @@
     :config {:displayRequestDuration true
              :deepLinking true}}))
 
+(defn- spa-index-handler
+  [{:keys [request-method uri] :as request}]
+  (when (and (= request-method :get)
+             (not (cstr/starts-with? uri "/api"))
+             (not (cstr/starts-with? uri "/openapi"))
+             (not (cstr/starts-with? uri "/docs")))
+    (when-let [index (response/file-response "index.html" {:root static-asset-root})]
+      (response/content-type index "text/html; charset=utf-8"))))
+
 (def handler
   (wrap-request-logging
    (ring/ring-handler
-   router
+    router
     (ring/routes
      swagger-ui-handler
+     (ring/create-file-handler {:path "/" :root static-asset-root})
+     spa-index-handler
      (ring/redirect-trailing-slash-handler)
      (ring/create-default-handler
       {:not-found http/not-found})))))

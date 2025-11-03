@@ -1,0 +1,9 @@
+.git
+node_modules
+.shadow-cljs
+.cpcache
+.clj-kondo
+target
+.DS_Store
+npm-debug.log*
+*.log
