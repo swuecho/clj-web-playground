@@ -1,4 +1,4 @@
-(ns acme.web.components.todo-table.todo-edit-dialog
+(ns acme.web.feature.todos.components.todo-edit-dialog
   (:require
    [acme.web.feature.todos.events :as todo-events]
    [acme.web.feature.todos.subs :as todo-subs]

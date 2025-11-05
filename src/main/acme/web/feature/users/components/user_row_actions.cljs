@@ -1,9 +1,9 @@
-(ns acme.web.components.user-table.user-row-actions
+(ns acme.web.feature.users.components.user-row-actions
   (:require
-   [acme.web.feature.users.events :as users-events]
-   [acme.web.feature.users.subs :as users-subs]
    [acme.web.components.base.action-button :as action-button]
    [acme.web.components.base.icons :as icons]
+   [acme.web.feature.users.events :as users-events]
+   [acme.web.feature.users.subs :as users-subs]
    [re-frame.core :as rf]))
 
 (defn user-row-actions [uuid]

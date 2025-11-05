@@ -1,4 +1,4 @@
-(ns acme.web.components.user-table.edit-user-dialog
+(ns acme.web.feature.users.components.edit-user-dialog
   (:require
    [acme.web.feature.users.events :as users-events]
    [acme.web.feature.users.subs :as users-subs]

@@ -1,16 +1,16 @@
 (ns acme.web.views
   (:require
-   [acme.web.components.user-table.add-user-dialog :refer [add-user-dialog]]
-   [acme.web.components.user-table.edit-user-dialog :refer [edit-user-dialog]]
    [acme.web.components.overview-panel :refer [overview-panel]]
    [acme.web.components.sidebar :as sidebar]
-   [acme.web.components.toast-banner :refer [toast-banner]]
-   [acme.web.components.todo-table.todo-add-dialog :refer [todo-add-dialog]]
-   [acme.web.components.todo-table.todo-edit-dialog :refer [todo-edit-dialog]]
-   [acme.web.components.todo-table :refer [todo-table]]
-   [acme.web.components.users-table :refer [users-table]]
    [acme.web.feature.daisy.demo :refer [daisy-ui-showcase]]
+   [acme.web.feature.toast.components.banner :refer [toast-banner]]
+   [acme.web.feature.users.components.add-user-dialog :refer [add-user-dialog]]
+   [acme.web.feature.users.components.edit-user-dialog :refer [edit-user-dialog]]
+   [acme.web.feature.users.components.users-table :refer [users-table]]
    [acme.web.feature.users.events :as user-events]
+   [acme.web.feature.todos.components.todo-add-dialog :refer [todo-add-dialog]]
+   [acme.web.feature.todos.components.todo-edit-dialog :refer [todo-edit-dialog]]
+   [acme.web.feature.todos.components.todo-table :refer [todo-table]]
    [re-frame.core :as rf]
    [reagent.core :as r]))
 

@@ -1,7 +1,7 @@
-(ns acme.web.components.todo-table
+(ns acme.web.feature.todos.components.todo-table
   (:require
-   [acme.web.components.todo-table.controls :as controls]
-   [acme.web.components.todo-table.table :as table]
+   [acme.web.feature.todos.components.controls :as controls]
+   [acme.web.feature.todos.components.table :as table]
    [acme.web.feature.todos.events :as todo-events]
    [acme.web.feature.todos.subs :as todo-subs]
    ["@rc-component/table" :default rc-table]

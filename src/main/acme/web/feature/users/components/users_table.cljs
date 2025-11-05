@@ -1,12 +1,13 @@
-(ns acme.web.components.users-table
+(ns acme.web.feature.users.components.users-table
   (:require
-   [acme.web.components.toast-banner :refer [toast-banner]]
-   [acme.web.components.user-table.add-user-dialog :refer [add-user-dialog]]
-   [acme.web.components.user-table.edit-user-dialog :refer [edit-user-dialog]]
-   [acme.web.components.user-table.user-row-actions :refer [user-row-actions]]
+   [acme.web.feature.toast.components.banner :refer [toast-banner]]
+   [acme.web.feature.users.components.add-user-dialog :refer [add-user-dialog]]
+   [acme.web.feature.users.components.edit-user-dialog :refer [edit-user-dialog]]
+   [acme.web.feature.users.components.user-row-actions :refer [user-row-actions]]
    [acme.web.feature.users.events :as users-events]
    [acme.web.feature.users.subs :as users-subs]
    [re-frame.core :as rf]))
+
 ;users-table is defined with two arities so callers can ask for either the default rendering or pass custom options. The zero-argument form
 ;  just delegates to the single-argument version with an empty map:
 

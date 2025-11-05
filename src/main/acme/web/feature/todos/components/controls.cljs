@@ -1,4 +1,4 @@
-(ns acme.web.components.todo-table.controls
+(ns acme.web.feature.todos.components.controls
   (:require
    [acme.web.feature.todos.events :as todo-events]
    [re-frame.core :as rf]))

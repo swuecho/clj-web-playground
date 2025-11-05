@@ -1,4 +1,4 @@
-(ns acme.web.components.toast-banner
+(ns acme.web.feature.toast.components.banner
   (:require
    [acme.web.feature.toast.events :as toast-events]
    [acme.web.feature.toast.subs :as toast-subs]
