@@ -4,8 +4,8 @@
    [acme.web.components.user-table.add-user-dialog :refer [add-user-dialog]]
    [acme.web.components.user-table.edit-user-dialog :refer [edit-user-dialog]]
    [acme.web.components.user-table.user-row-actions :refer [user-row-actions]]
-   [acme.web.events :as events]
-   [acme.web.subs :as subs]
+   [acme.web.feature.users.events :as users-events]
+   [acme.web.feature.users.subs :as users-subs]
    [re-frame.core :as rf]))
 ;users-table is defined with two arities so callers can ask for either the default rendering or pass custom options. The zero-argument form
 ;  just delegates to the single-argument version with an empty map:
@@ -21,9 +21,9 @@
                include-aux? true
                wrap? true
                actions? true}} opts
-         users (rf/subscribe [::subs/users])
-         loading? (rf/subscribe [::subs/loading?])
-         error (rf/subscribe [::subs/error])
+         users (rf/subscribe [::users-subs/users])
+         loading? (rf/subscribe [::users-subs/loading?])
+         error (rf/subscribe [::users-subs/error])
          container-classes (str "space-y-6 "
                                 (when wrap? "max-w-5xl mx-auto p-6"))]
      (fn []
@@ -56,11 +56,11 @@
              actions [:div {:class "flex flex-wrap gap-3"}
                       [:button {:type "button"
                                 :class "btn btn-outline"
-                                :on-click #(rf/dispatch [::events/fetch-users])}
+                                :on-click #(rf/dispatch [::users-events/fetch-users])}
                        "Reload"]
                       [:button {:type "button"
                                 :class "btn btn-primary"
-                                :on-click #(rf/dispatch [::events/open-add-user-dialog])}
+                                :on-click #(rf/dispatch [::users-events/open-add-user-dialog])}
                        "Add User"]]
              content (cond-> []
                        include-aux? (conj [toast-banner])

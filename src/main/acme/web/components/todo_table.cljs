@@ -1,18 +1,18 @@
 (ns acme.web.components.todo-table
   (:require
-   [re-frame.core :as rf]
-   [acme.web.events :as events]
-   [acme.web.subs :as subs]
-   [acme.web.components.todo-table.table :as table]
    [acme.web.components.todo-table.controls :as controls]
-   ["@rc-component/table" :default rc-table]))
+   [acme.web.components.todo-table.table :as table]
+   [acme.web.feature.todos.events :as todo-events]
+   [acme.web.feature.todos.subs :as todo-subs]
+   ["@rc-component/table" :default rc-table]
+   [re-frame.core :as rf]))
 
 (defn todo-table []
-  (let [loading? (rf/subscribe [::subs/todos-loading?])
-        error (rf/subscribe [::subs/todos-error])
-        sort-config (rf/subscribe [::subs/todo-sort])
-        filters-config (rf/subscribe [::subs/todo-filters])
-        pagination-config (rf/subscribe [::subs/todo-pagination])]
+  (let [loading? (rf/subscribe [::todo-subs/todos-loading?])
+        error (rf/subscribe [::todo-subs/todos-error])
+        sort-config (rf/subscribe [::todo-subs/todo-sort])
+        filters-config (rf/subscribe [::todo-subs/todo-filters])
+        pagination-config (rf/subscribe [::todo-subs/todo-pagination])]
     (fn []
       (let [is-loading? @loading?
             error-message @error
@@ -24,8 +24,8 @@
             field (or field :created_at)
             direction (or direction :desc)
             dispatch-sort (fn [target-field target-direction]
-                            (rf/dispatch [::events/set-todo-sort {:field target-field
-                                                                  :direction target-direction}]))
+                            (rf/dispatch [::todo-events/set-todo-sort {:field target-field
+                                                                       :direction target-direction}]))
             columns (table/build-columns {:field field
                                           :direction direction
                                           :dispatch-sort dispatch-sort})

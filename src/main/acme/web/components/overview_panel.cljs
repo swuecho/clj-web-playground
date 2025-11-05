@@ -1,13 +1,14 @@
 (ns acme.web.components.overview-panel
   (:require
    [acme.web.components.base.metric-card :refer [metric-card]]
-   [acme.web.subs :as subs]
+   [acme.web.feature.todos.subs :as todos-subs]
+   [acme.web.feature.users.subs :as users-subs]
    [clojure.string :as str]
    [re-frame.core :as rf]))
 
 (defn overview-panel [{:keys [on-view-users on-view-todos]}]
-  (let [users (rf/subscribe [::subs/users])
-        todos (rf/subscribe [::subs/todos-items])]
+  (let [users (rf/subscribe [::users-subs/users])
+        todos (rf/subscribe [::todos-subs/todos-items])]
     (fn []
       (let [user-items (vec (or @users []))
             todo-items (vec (or @todos []))

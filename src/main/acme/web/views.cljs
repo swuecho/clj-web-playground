@@ -9,34 +9,34 @@
    [acme.web.components.todo-table.todo-edit-dialog :refer [todo-edit-dialog]]
    [acme.web.components.todo-table :refer [todo-table]]
    [acme.web.components.users-table :refer [users-table]]
-   [acme.web.events :as events]
    [acme.web.feature.daisy.demo :refer [daisy-ui-showcase]]
+   [acme.web.feature.users.events :as user-events]
    [re-frame.core :as rf]
    [reagent.core :as r]))
 
 (defn users-panel []
-[:<>
+  [:<>
    [add-user-dialog]
    [edit-user-dialog]
-  [:div {:class "space-y-6"}
-   [:div {:class "flex flex-wrap items-center justify-between gap-4"}
-    [:div
-     [:h2 {:class "text-2xl font-semibold text-base-content"} "User Directory"]
-     [:p {:class "text-sm text-base-content/70"}
-      "Manage the people who can access your workspace."]]
-    [:div {:class "flex flex-wrap gap-2"}
-     [:button {:type "button"
-               :class "btn btn-outline btn-sm"
-               :on-click #(rf/dispatch [::events/fetch-users])}
-      "Reload"]
-     [:button {:type "button"
-               :class "btn btn-primary btn-sm"
-               :on-click #(rf/dispatch [::events/open-add-user-dialog])}
-      "Add User"]]]
-   [users-table {:wrap? false
-                 :include-aux? false
-                 :title nil
-                 :actions? false}]]])
+   [:div {:class "space-y-6"}
+    [:div {:class "flex flex-wrap items-center justify-between gap-4"}
+     [:div
+      [:h2 {:class "text-2xl font-semibold text-base-content"} "User Directory"]
+      [:p {:class "text-sm text-base-content/70"}
+       "Manage the people who can access your workspace."]]
+     [:div {:class "flex flex-wrap gap-2"}
+      [:button {:type "button"
+                :class "btn btn-outline btn-sm"
+                :on-click #(rf/dispatch [::user-events/fetch-users])}
+       "Reload"]
+      [:button {:type "button"
+                :class "btn btn-primary btn-sm"
+                :on-click #(rf/dispatch [::user-events/open-add-user-dialog])}
+       "Add User"]]]
+    [users-table {:wrap? false
+                  :include-aux? false
+                  :title nil
+                  :actions? false}]]])
 
 (defn todos-panel []
   [:<>
