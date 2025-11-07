@@ -92,18 +92,30 @@
    [:p {:class "text-sm"}
     "Visit the docs directory for setup guides and API references."]])
 
-(defn- sidebar-footer [collapsed? toggle!]
-  (if collapsed?
-    [:div {:class "mt-auto flex w-full items-center justify-center gap-3"}
-     [collapse-toggle-button collapsed? toggle!]]
-    [:div {:class "mt-auto w-full space-y-3"}
-     [help-card]
-     [:div {:class "flex justify-end"}
-      [collapse-toggle-button collapsed? toggle!]]]))
+(defn- user-email-block [collapsed? email]
+  (when (seq email)
+    (if collapsed?
+      [:p {:class "flex-1 truncate text-[10px] font-semibold text-base-content/70"}
+       email]
+      [:div {:class "min-w-0"}
+       [:p {:class "truncate text-sm font-semibold text-base-content"}
+        email]])))
 
-(defn sidebar [{:keys [active-id on-select]}]
+(defn- sidebar-footer [collapsed? toggle! email]
+  (let [email-block (user-email-block collapsed? email)]
+    (if collapsed?
+      [:div {:class "mt-auto flex w-full items-center gap-2"}
+       (when email-block email-block)
+       [collapse-toggle-button collapsed? toggle!]]
+      [:div {:class "mt-auto w-full space-y-3"}
+       [help-card]
+       [:div {:class "flex items-center justify-between gap-3"}
+        (or email-block [:span {:class "text-sm font-semibold text-base-content/40"} "No user"])
+        [collapse-toggle-button collapsed? toggle!]]])))
+
+(defn sidebar [{:keys [active-id on-select user-email]}]
   (r/with-let [collapsed? (r/atom false)]
-    (fn [{:keys [active-id on-select]}]
+    (fn [{:keys [active-id on-select user-email]}]
       (let [collapsed @collapsed?
             toggle! #(swap! collapsed? not)]
         [:aside {:class (str "w-full shrink-0 border-b border-base-200 bg-base-100/95 transition-all duration-200 ease-in-out "
@@ -128,4 +140,4 @@
            (for [item sidebar-nav-items]
              ^{:key (:id item)}
              [nav-button item active-id on-select collapsed])]
-          [sidebar-footer collapsed toggle!]]]))))
+          [sidebar-footer collapsed toggle! user-email]]]))))

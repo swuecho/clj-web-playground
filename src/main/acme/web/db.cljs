@@ -6,7 +6,8 @@
    :updated {:after "" :before ""}})
 
 (def default-db
-  {:users []
+  {:isLoggedIn? false
+   :users []
    :loading? false
    :error nil
    :add-user {:visible? false

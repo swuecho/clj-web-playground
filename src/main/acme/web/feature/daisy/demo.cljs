@@ -1,4 +1,6 @@
-(ns acme.web.feature.daisy.demo)
+(ns acme.web.feature.daisy.demo 
+  (:require
+   [acme.web.feature.auth.login :refer [login-panel]]))
 
 (defn daisy-ui-button-showcase []
   [:div {:class "flex flex-wrap gap-3"}
@@ -73,6 +75,7 @@
 
 (defn daisy-ui-showcase []
   [:div {:class "space-y-8"}
+   
    [:section
     [:h3 {:class "text-lg font-semibold"} "Buttons"]
     [daisy-ui-button-showcase]]
