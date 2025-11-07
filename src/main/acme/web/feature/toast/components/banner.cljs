@@ -1,11 +1,11 @@
-(ns acme.web.components.toast-banner
+(ns acme.web.feature.toast.components.banner
   (:require
-   [re-frame.core :as rf]
-   [acme.web.events :as events]
-   [acme.web.subs :as subs]))
+   [acme.web.feature.toast.events :as toast-events]
+   [acme.web.feature.toast.subs :as toast-subs]
+   [re-frame.core :as rf]))
 
 (defn toast-banner []
-  (let [toast (rf/subscribe [::subs/toast])]
+  (let [toast (rf/subscribe [::toast-subs/toast])]
     (fn []
       (when-let [{:keys [message variant]} (:current @toast)]
         (let [alert-class (case variant
@@ -17,5 +17,5 @@
             [:span message]
             [:button {:type "button"
                       :class "btn btn-sm btn-ghost"
-                      :on-click #(rf/dispatch [::events/dismiss-toast])}
+                      :on-click #(rf/dispatch [::toast-events/dismiss-toast])}
              "Dismiss"]]])))))

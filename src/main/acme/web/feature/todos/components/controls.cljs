@@ -1,7 +1,7 @@
-(ns acme.web.components.todo-table.controls
+(ns acme.web.feature.todos.components.controls
   (:require
-   [re-frame.core :as rf]
-   [acme.web.events :as events]))
+   [acme.web.feature.todos.events :as todo-events]
+   [re-frame.core :as rf]))
 
 (def per-page-options [10 25 50 100])
 
@@ -25,7 +25,7 @@
        [:span {:class "label-text font-semibold"} "Status"]]
       [:select {:class "select select-bordered select-sm"
                 :value (name completed-filter)
-                :on-change #(rf/dispatch [::events/update-todo-filter
+                :on-change #(rf/dispatch [::todo-events/update-todo-filter
                                           [:completed]
                                           (keyword (.. % -target -value))])}
        [:option {:value "all"} "All"]
@@ -37,7 +37,7 @@
       [:input {:type "datetime-local"
                :class "input input-bordered input-sm"
                :value created-after
-               :on-change #(rf/dispatch [::events/update-todo-filter
+               :on-change #(rf/dispatch [::todo-events/update-todo-filter
                                          [:created :after]
                                          (.. % -target -value)])}]]
      [:div {:class "form-control w-full"}
@@ -46,7 +46,7 @@
       [:input {:type "datetime-local"
                :class "input input-bordered input-sm"
                :value created-before
-               :on-change #(rf/dispatch [::events/update-todo-filter
+               :on-change #(rf/dispatch [::todo-events/update-todo-filter
                                          [:created :before]
                                          (.. % -target -value)])}]]
      [:div {:class "form-control w-full"}
@@ -55,7 +55,7 @@
       [:input {:type "datetime-local"
                :class "input input-bordered input-sm"
                :value updated-after
-               :on-change #(rf/dispatch [::events/update-todo-filter
+               :on-change #(rf/dispatch [::todo-events/update-todo-filter
                                          [:updated :after]
                                          (.. % -target -value)])}]]
      [:div {:class "form-control w-full"}
@@ -64,13 +64,13 @@
       [:input {:type "datetime-local"
                :class "input input-bordered input-sm"
                :value updated-before
-               :on-change #(rf/dispatch [::events/update-todo-filter
+               :on-change #(rf/dispatch [::todo-events/update-todo-filter
                                          [:updated :before]
                                          (.. % -target -value)])}]]
      [:div {:class "flex items-end"}
       [:button {:type "button"
                 :class "btn btn-ghost btn-sm w-full sm:w-auto"
-                :on-click #(rf/dispatch [::events/clear-todo-filters])
+                :on-click #(rf/dispatch [::todo-events/clear-todo-filters])
                 :disabled filters-default?}
        "Clear Filters"]]]))
 
@@ -78,11 +78,11 @@
   [:div {:class "flex flex-wrap gap-3"}
    [:button {:type "button"
              :class "btn btn-outline btn-sm"
-             :on-click #(rf/dispatch [::events/fetch-todos])}
+             :on-click #(rf/dispatch [::todo-events/fetch-todos])}
     "Reload"]
    [:button {:type "button"
              :class "btn btn-primary btn-sm"
-             :on-click #(rf/dispatch [::events/open-add-todo-dialog])}
+             :on-click #(rf/dispatch [::todo-events/open-add-todo-dialog])}
     "Add Todo"]])
 
 (defn pagination-controls [{:keys [summary per-page page total-pages can-prev? can-next? prev-page next-page]}]
@@ -92,7 +92,7 @@
     [:div {:class "form-control w-full sm:w-32"}
      [:select {:class "select select-bordered select-sm"
                :value (str per-page)
-               :on-change #(rf/dispatch [::events/set-todo-per-page
+               :on-change #(rf/dispatch [::todo-events/set-todo-per-page
                                          (.. % -target -value)])}
       (for [option per-page-options]
         ^{:key option}
@@ -102,7 +102,7 @@
                :class "btn btn-outline btn-sm"
                :disabled (not can-prev?)
                :on-click #(when can-prev?
-                            (rf/dispatch [::events/set-todo-page prev-page]))}
+                            (rf/dispatch [::todo-events/set-todo-page prev-page]))}
       "Prev"]
      [:span {:class "text-sm font-medium text-base-content/80"}
       (str page " of " total-pages)]
@@ -110,5 +110,5 @@
                :class "btn btn-outline btn-sm"
                :disabled (not can-next?)
                :on-click #(when can-next?
-                            (rf/dispatch [::events/set-todo-page next-page]))}
+                            (rf/dispatch [::todo-events/set-todo-page next-page]))}
       "Next"]]]])

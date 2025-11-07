@@ -1,15 +1,15 @@
-(ns acme.web.components.todo-table.todo-add-dialog
+(ns acme.web.feature.todos.components.todo-add-dialog
   (:require
-   [re-frame.core :as rf]
-   [acme.web.events :as events]
-   [acme.web.subs :as subs]))
+   [acme.web.feature.todos.events :as todo-events]
+   [acme.web.feature.todos.subs :as todo-subs]
+   [re-frame.core :as rf]))
 
 (defn todo-add-dialog []
-  (let [visible? (rf/subscribe [::subs/todo-add-visible?])
-        title (rf/subscribe [::subs/todo-add-title])
-        completed? (rf/subscribe [::subs/todo-add-completed?])
-        submitting? (rf/subscribe [::subs/todo-add-submitting?])
-        errors (rf/subscribe [::subs/todo-add-errors])]
+  (let [visible? (rf/subscribe [::todo-subs/todo-add-visible?])
+        title (rf/subscribe [::todo-subs/todo-add-title])
+        completed? (rf/subscribe [::todo-subs/todo-add-completed?])
+        submitting? (rf/subscribe [::todo-subs/todo-add-submitting?])
+        errors (rf/subscribe [::todo-subs/todo-add-errors])]
     (fn []
       (when @visible?
         [:div {:class "modal modal-open"}
@@ -18,7 +18,7 @@
            [:h2 {:class "text-xl font-semibold"} "Add Todo"]
            [:button {:type "button"
                      :class "btn btn-sm btn-ghost"
-                     :on-click #(rf/dispatch [::events/close-add-todo-dialog])
+                     :on-click #(rf/dispatch [::todo-events/close-add-todo-dialog])
                      :disabled @submitting?}
             "✕"]]
           [:div {:class "space-y-4"}
@@ -30,7 +30,7 @@
              [:input {:id "add-todo-title"
                       :type "text"
                       :value @title
-                      :on-change #(rf/dispatch [::events/update-add-todo-field :title (.. % -target -value)])
+                      :on-change #(rf/dispatch [::todo-events/update-add-todo-field :title (.. % -target -value)])
                       :class (str "input input-bordered w-full "
                                   (when (get @errors :title) "input-error"))}]
              (when-let [title-error (get @errors :title)]
@@ -43,23 +43,23 @@
              [:input {:id "add-todo-completed"
                       :type "checkbox"
                       :checked (boolean @completed?)
-                      :on-change #(rf/dispatch [::events/update-add-todo-field :completed? (.. % -target -checked)])
+                      :on-change #(rf/dispatch [::todo-events/update-add-todo-field :completed? (.. % -target -checked)])
                       :class "toggle toggle-primary"}]]]]
           [:div {:class "modal-action"}
            [:button {:type "button"
                      :class "btn btn-ghost"
-                     :on-click #(rf/dispatch [::events/close-add-todo-dialog])
+                     :on-click #(rf/dispatch [::todo-events/close-add-todo-dialog])
                      :disabled @submitting?}
             "Cancel"]
            [:button {:type "button"
                      :class (str "btn btn-primary "
                                  (when @submitting? "loading"))
-                     :on-click #(rf/dispatch [::events/add-todo])
+                     :on-click #(rf/dispatch [::todo-events/add-todo])
                      :disabled @submitting?}
             (if @submitting? "Saving" "Save")]]]
          [:div {:class "modal-backdrop"}
           [:button {:type "button"
                     :class "btn"
-                    :on-click #(rf/dispatch [::events/close-add-todo-dialog])
+                    :on-click #(rf/dispatch [::todo-events/close-add-todo-dialog])
                     :disabled @submitting?}
            "Close"]]]))))

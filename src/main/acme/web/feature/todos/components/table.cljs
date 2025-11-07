@@ -1,7 +1,7 @@
-(ns acme.web.components.todo-table.table
+(ns acme.web.feature.todos.components.table
   (:require
-   [reagent.core :as r]
-   [acme.web.components.todo-table.todo-row-actions :refer [todo-row-actions]]))
+   [acme.web.feature.todos.components.todo-row-actions :refer [todo-row-actions]]
+   [reagent.core :as r]))
 
 (def header-base-class
   "bg-base-200/85 text-[11px] font-semibold uppercase tracking-wide text-base-content/70 px-4 py-3 border-b border-base-200/80 ")
