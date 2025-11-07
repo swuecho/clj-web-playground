@@ -6,3 +6,8 @@
  ::is-logged-in?
  (fn [db]
    (:isLoggedIn? db)))
+
+(rf/reg-sub
+ ::user
+ (fn [db]
+   (:user db)))
