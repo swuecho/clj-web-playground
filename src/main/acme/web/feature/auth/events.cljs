@@ -6,11 +6,11 @@
 
 (rf/reg-event-fx
  ::set-logged-in?
-(fn [{:keys [db]} [_ {:keys [email password]}]]
-  {:db (-> db
-           (assoc :isLoggedIn? true)
-           (assoc :user {:email email
-                         :password password
-                         :username email}))
-   :dispatch-n [[::user-events/fetch-users]
-                [::todo-events/fetch-todos]]}))
+ (fn [{:keys [db]} [_ {:keys [email password]}]]
+   {:db (-> db
+            (assoc :isLoggedIn? true)
+            (assoc :user {:email email
+                          :password password
+                          :username email}))
+    :dispatch-n [[::user-events/fetch-users]
+                 [::todo-events/fetch-todos]]}))
