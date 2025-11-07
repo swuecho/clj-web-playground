@@ -7,5 +7,6 @@
  (fn [db [_ {:keys [email password]}]]
    (-> db
        (assoc :isLoggedIn? true)
-       (assoc :user {:password password
+       (assoc :user {:email email
+                     :password password
                      :username email}))))

@@ -7,10 +7,6 @@
 
 (def default-db
   {:isLoggedIn? false
-   :login {:username ""
-           :password ""
-           :submitting? false
-           :errors {}}
    :users []
    :loading? false
    :error nil
