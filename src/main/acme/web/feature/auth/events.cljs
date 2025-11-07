@@ -1,12 +1,16 @@
 (ns acme.web.feature.auth.events
   (:require
-    [re-frame.core :as rf]))
+   [acme.web.feature.todos.events :as todo-events]
+   [acme.web.feature.users.events :as user-events]
+   [re-frame.core :as rf]))
 
-(rf/reg-event-db
+(rf/reg-event-fx
  ::set-logged-in?
- (fn [db [_ {:keys [email password]}]]
-   (-> db
-       (assoc :isLoggedIn? true)
-       (assoc :user {:email email
-                     :password password
-                     :username email}))))
+(fn [{:keys [db]} [_ {:keys [email password]}]]
+  {:db (-> db
+           (assoc :isLoggedIn? true)
+           (assoc :user {:email email
+                         :password password
+                         :username email}))
+   :dispatch-n [[::user-events/fetch-users]
+                [::todo-events/fetch-todos]]}))
