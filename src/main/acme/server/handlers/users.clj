@@ -2,6 +2,7 @@
   (:require
    [clojure.string :as str]
    [clojure.walk :as walk]
+   [clojure.tools.logging :as log]
    [acme.server.auth :as auth]
    [acme.server.db :as db]
    [acme.server.http :as http]
@@ -208,6 +209,7 @@
   (let [uuid (or (get-in parameters [:path :uuid]) (:uuid path-params))
         uuid (some-> uuid str/trim)
         uuid-param (->uuid uuid)]
+    (log/infof "update-user-response uuid=%s body-params=%s" uuid (pr-str body-params))
     (cond
       (str/blank? uuid)
       (http/respond-json {:error "User uuid is required"} 400)
@@ -217,10 +219,9 @@
 
       :else
       (let [raw-body (or body-params (:body parameters))
-            _ (when (and raw-body (not (map? raw-body)))
-                (println "[users] unexpected body type" (type raw-body)))
             body (normalize-request-map raw-body)
             {:keys [status message updates]} (validate-update uuid-param body)]
+        (log/infof "update-user-response parsed body=%s updates=%s" (pr-str body) (pr-str updates))
         (if-not updates
           (http/respond-json {:error message} status)
           (let [prepared-updates (cond-> updates
@@ -228,6 +229,7 @@
                                    (-> (assoc :password-hash (auth/hash-password (:password updates)))
                                        (dissoc :password)))
                 sql-info (build-update-sql prepared-updates)]
+            (log/infof "update-user-response prepared-updates=%s sql-info=%s" (pr-str prepared-updates) (pr-str sql-info))
             (if-not sql-info
               (http/respond-json {:error "Supply at least one field to update"} 400)
               (let [{:keys [sql params]} sql-info
@@ -235,6 +237,7 @@
                 (try
                   (let [updated (db/with-transaction
                                   (db/query-one (into [sql] statement)))]
+                    (log/infof "update-user-response updated=%s" (pr-str updated))
                     (if updated
                       (http/respond-json updated status)
                       (http/not-found nil)))
@@ -257,5 +260,4 @@
                       (db/query-one ["delete from \"UserTable\" where uuid = ? returning uuid::text as uuid, \"name\" as name, age as age, email, role" uuid-param]))]
         (if deleted
           (http/respond-json deleted)
-          (http/not-found nil))))))
-)
+          (http/not-found nil)))))))

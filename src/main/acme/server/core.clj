@@ -11,7 +11,7 @@
    [acme.server.schemas.user :as user.schema]
    [acme.server.http :as http]
    [acme.server.middleware.auth :as auth-middleware]
-   [acme.server.middleware.logging :refer [wrap-request-logging]]
+   [acme.server.middleware.logging :as logging :refer [wrap-request-logging]]
    [integrant.core :as ig]
    [reitit.ring :as ring]
    [reitit.coercion.malli :as malli-coercion]
@@ -164,6 +164,7 @@
                         muuntaja/format-response-middleware
                         muuntaja/format-request-middleware
                         auth-middleware/wrap-authentication
+                        logging/wrap-log-response-shape
                         ring-coercion/coerce-response-middleware
                         ring-coercion/coerce-request-middleware
                         ring-coercion/coerce-exceptions-middleware]}}))

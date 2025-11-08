@@ -138,9 +138,24 @@
               elapsed (elapsed-ms started)
               [json-response-body response*] (capture-json-response response)
               summary (summarize-response response* elapsed json-response-body)]
+          (when (and response (not (map? response)))
+            (let [match (get request* :reitit.core/match)]
+              (log/errorf "Handler returned non-map response (%s). match=%s response=%s"
+                          (type response)
+                          (some-> match :data (select-keys [:name :handler]))
+                          response)))
           (log/infof "<- %s %s %s" method uri (pr-str summary))
           response*)
         (catch Exception ex
           (let [elapsed (elapsed-ms started)]
             (log/errorf ex "X %s %s failed after %dms" method uri elapsed)
             (throw ex)))))))
+(defn wrap-log-response-shape [handler]
+  (fn [request]
+    (let [response (handler request)]
+      (when (and response (not (map? response)))
+        (log/errorf "Route handler produced non-map response (%s) for %s %s"
+                    (type response)
+                    (some-> request :request-method name str/upper-case)
+                    (:uri request)))
+      response)))
