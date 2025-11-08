@@ -52,6 +52,54 @@
       "Track work in progress, filter by status, and keep momentum up."]]
     [todo-table]]])
 
+(def placeholder-card-classes
+  "rounded-xl border border-dashed border-base-300 bg-base-100/60 text-center text-base-content/60")
+
+(defn placeholder-card [{:keys [message padding-class]}]
+  [:div {:class (str placeholder-card-classes " " (or padding-class "p-16"))}
+   message])
+
+(defn users-section [can-manage-users?]
+  (if can-manage-users?
+    [users-panel]
+    [placeholder-card {:message "Admin access required"
+                       :padding-class "p-10"}]))
+
+(defn workspace-header [{:keys [label description]}]
+  [:header {:class "flex flex-wrap items-center justify-between gap-4"}
+   [:div {:class "space-y-1"}
+    [:p {:class "text-xs font-semibold uppercase tracking-wide text-base-content/60"}
+     "Workspace"]
+    [:h1 {:class "text-3xl font-semibold text-base-content"} (or label "Overview")]
+    (when description
+      [:p {:class "text-sm text-base-content/70"} description])]])
+
+(defn workspace-section [{:keys [active-id can-manage-users? set-active]}]
+  (case active-id
+    :overview [overview-panel {:on-view-users (when can-manage-users?
+                                                #(set-active :users))
+                               :on-view-todos #(set-active :todos)
+                               :can-manage-users? can-manage-users?}]
+    :users [users-section can-manage-users?]
+    :todos [todos-panel]
+    :demo [daisy-ui-showcase]
+    [placeholder-card {:message "Section coming soon."}]))
+
+(defn workspace-main [{:keys [label description active-id can-manage-users? set-active]}]
+  [:main {:class "flex-1 min-h-0"}
+   [:div {:class "mx-auto flex h-full max-h-screen flex-col gap-10 overflow-y-auto px-6 py-10"}
+    [workspace-header {:label label :description description}]
+    [:div {:class "space-y-10"}
+     [workspace-section {:active-id active-id
+                         :can-manage-users? can-manage-users?
+                         :set-active set-active}]]]])
+
+(defn workspace-layout [{:keys [sidebar-props main-props]}]
+  [:div {:class "min-h-screen bg-base-200/60 text-base-content"}
+   [:div {:class "flex min-h-screen flex-col md:flex-row"}
+    [sidebar/sidebar sidebar-props]
+    [workspace-main main-props]]])
+
 (defn workspace-shell []
   (let [current-user (rf/subscribe [::auth-subs/user])]
     (r/with-let [active (r/atom :overview)]
@@ -63,6 +111,7 @@
               nav-map (sidebar/nav-map nav-items)
               logout! #(rf/dispatch [::auth-events/logout {:reason "Signed out"
                                                            :silent? false}])
+              set-active #(reset! active %)
               active-id (let [candidate @active]
                           (if (and (not can-manage-users?) (= candidate :users))
                             :overview
@@ -71,35 +120,16 @@
               user-email (or (:email user)
                              (:name user)
                              (:uuid user))]
-          [:div {:class "min-h-screen bg-base-200/60 text-base-content"}
-           [:div {:class "flex min-h-screen flex-col md:flex-row"}
-            [sidebar/sidebar {:active-id active-id
-                              :on-select #(reset! active %)
-                              :user-email user-email
-                              :nav-items nav-items
-                              :on-logout logout!}]
-            [:main {:class "flex-1 min-h-0"}
-             [:div {:class "mx-auto flex h-full max-h-screen flex-col gap-10 overflow-y-auto px-6 py-10"}
-              [:header {:class "flex flex-wrap items-center justify-between gap-4"}
-               [:div {:class "space-y-1"}
-                [:p {:class "text-xs font-semibold uppercase tracking-wide text-base-content/60"}
-                 "Workspace"]
-                [:h1 {:class "text-3xl font-semibold text-base-content"} (or label "Overview")]
-                (when description
-                  [:p {:class "text-sm text-base-content/70"} description])]]
-              [:div {:class "space-y-10"}
-               (case active-id
-                 :overview [overview-panel {:on-view-users (when can-manage-users? #(reset! active :users))
-                                            :on-view-todos #(reset! active :todos)
-                                            :can-manage-users? can-manage-users?}]
-                 :users (if can-manage-users?
-                          [users-panel]
-                          [:div {:class "rounded-xl border border-dashed border-base-300 bg-base-100/60 p-10 text-center text-base-content/60"}
-                           "Admin access required"])
-                 :todos [todos-panel]
-                 :demo [daisy-ui-showcase]
-                 [:div {:class "rounded-xl border border-dashed border-base-300 bg-base-100/60 p-16 text-center text-base-content/60"}
-                  "Section coming soon."])]]]]])))))
+          [workspace-layout {:sidebar-props {:active-id active-id
+                                             :on-select set-active
+                                             :user-email user-email
+                                             :nav-items nav-items
+                                             :on-logout logout!}
+                              :main-props {:label label
+                                           :description description
+                                           :active-id active-id
+                                           :can-manage-users? can-manage-users?
+                                           :set-active set-active}}])))))
 
 (defn main-panel2 []
   [:<>
