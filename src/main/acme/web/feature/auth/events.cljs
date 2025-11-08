@@ -3,6 +3,7 @@
    [acme.web.feature.toast.events :as toast]
    [acme.web.feature.todos.events :as todo-events]
    [acme.web.feature.users.events :as user-events]
+   [acme.web.storage :as storage]
    [ajax.core :as ajax]
    [clojure.string :as str]
    [day8.re-frame.http-fx]
@@ -21,6 +22,22 @@
       (assoc-in [:auth :expires-at] nil)
       (assoc-in [:auth :logging-in?] false)
       (assoc-in [:auth :error] nil)))
+
+(defn- hydrate-auth [db {:keys [token expires-at user]}]
+  (-> db
+      (assoc :isLoggedIn? true)
+      (assoc :user user)
+      (assoc-in [:auth :token] token)
+      (assoc-in [:auth :expires-at] expires-at)
+      (assoc-in [:auth :logging-in?] false)
+      (assoc-in [:auth :error] nil)))
+
+(rf/reg-fx
+ ::persist-auth
+ (fn [snapshot]
+   (if snapshot
+     (storage/save-auth! snapshot)
+     (storage/clear-auth!))))
 
 (rf/reg-event-fx
  ::login
@@ -68,7 +85,10 @@
     :dispatch-n [[::user-events/fetch-users]
                  [::todo-events/fetch-todos]
                  [::toast/enqueue-toast {:message (str "Welcome back, " (or (:name user) (:email user)))
-                                         :variant :success}]]}))
+                                         :variant :success}]]
+    ::persist-auth {:token access_token
+                    :expires-at expires_at
+                    :user user}}))
 
 (rf/reg-event-fx
  ::login-failed
@@ -87,12 +107,27 @@
  ::logout
  (fn [{:keys [db]} [_ {:keys [reason silent?]}]]
    (let [next-db (reset-auth db)]
-     (cond-> {:db next-db}
+     (cond-> {:db next-db
+              ::persist-auth nil}
        (and reason (not silent?))
        (assoc :dispatch [::toast/enqueue-toast {:message reason :variant :info}])))))
 
 (rf/reg-event-fx
  ::session-expired
- (fn [_ [_ message]]
-   {:dispatch [::logout {:reason (or message "Session expired. Please sign in again")
-                         :silent? false}]}))
+  (fn [_ [_ message]]
+    {:dispatch [::logout {:reason (or message "Session expired. Please sign in again")
+                          :silent? false}]}))
+
+(defn- valid-token? [token]
+  (and (string? token) (not (str/blank? token))))
+
+(rf/reg-event-fx
+ ::restore-session
+ (fn [{:keys [db]} _]
+   (if-let [{:keys [token] :as snapshot} (storage/load-auth)]
+     (if (valid-token? token)
+       {:db (hydrate-auth db snapshot)
+        :dispatch-n [[::user-events/fetch-users]
+                     [::todo-events/fetch-todos]]}
+       {::persist-auth nil})
+     nil)))
