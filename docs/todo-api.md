@@ -1,6 +1,6 @@
 # Todo API
 
-The `/api/todo` endpoints exercise Toucan2's ORM-style helpers instead of raw SQL queries. They assume a PostgreSQL table named `todo_items` with these columns:
+The `/api/todo` endpoints exercise Toucan2's ORM-style helpers instead of raw SQL queries. They assume a PostgreSQL table named `todo_items` with these columns. All requests must include a valid bearer token (`Authorization: Bearer <jwt>`) obtained from `/api/auth/login`.
 
 ```sql
 create table if not exists "todo_items" (

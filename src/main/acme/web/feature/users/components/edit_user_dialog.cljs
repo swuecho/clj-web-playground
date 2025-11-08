@@ -9,6 +9,8 @@
         uuid (rf/subscribe [::users-subs/edit-user-uuid])
         name (rf/subscribe [::users-subs/edit-user-name])
         age (rf/subscribe [::users-subs/edit-user-age])
+        email (rf/subscribe [::users-subs/edit-user-email])
+        password (rf/subscribe [::users-subs/edit-user-password])
         submitting? (rf/subscribe [::users-subs/edit-user-submitting?])
         errors (rf/subscribe [::users-subs/edit-user-errors])]
     (fn []
@@ -37,6 +39,16 @@
               [:span {:class "text-error text-sm"} name-error])]
            [:div {:class "form-control"}
             [:label {:class "label"}
+             [:span {:class "label-text"} "Email"]]
+            [:input {:type "email"
+                     :value @email
+                     :on-change #(rf/dispatch [::users-events/update-edit-user-field :email (.. % -target -value)])
+                     :class (str "input input-bordered "
+                                 (when (get @errors :email) "input-error"))}]
+            (when-let [email-error (get @errors :email)]
+              [:span {:class "text-error text-sm"} email-error])]
+           [:div {:class "form-control"}
+            [:label {:class "label"}
              [:span {:class "label-text"} "Age"]]
             [:input {:type "number"
                      :min 0
@@ -45,7 +57,18 @@
                      :class (str "input input-bordered "
                                  (when (get @errors :age) "input-error"))}]
             (when-let [age-error (get @errors :age)]
-              [:span {:class "text-error text-sm"} age-error])]]
+              [:span {:class "text-error text-sm"} age-error])]
+           [:div {:class "form-control"}
+            [:label {:class "label"}
+             [:span {:class "label-text"} "New Password"]
+             [:span {:class "label-text-alt"} "Leave blank to keep current"]]
+            [:input {:type "password"
+                     :value @password
+                     :on-change #(rf/dispatch [::users-events/update-edit-user-field :password (.. % -target -value)])
+                     :class (str "input input-bordered "
+                                 (when (get @errors :password) "input-error"))}]
+            (when-let [password-error (get @errors :password)]
+              [:span {:class "text-error text-sm"} password-error])]]
           [:div {:class "modal-action"}
            [:button {:type "button"
                      :class "btn btn-ghost"

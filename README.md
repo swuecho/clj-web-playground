@@ -6,12 +6,15 @@
 - Use `npm run repl` (alias for `clj -M:repl`) to start an nREPL server with CIDER middleware preloaded.
 - Endpoints provided:
   - `GET /api/health` – simple readiness probe.
+  - `POST /api/auth/login` – exchange email/password for a signed JWT.
   - `GET /api/users` – list users from Postgres.
-  - `POST /api/users` – create a user record; accepts JSON `{uuid?, name, age}`.
+  - `POST /api/users` – create a user record; accepts JSON `{uuid?, name, age, email, password}`.
   - `PUT/PATCH /api/users/:uuid` – update an existing user.
   - `DELETE /api/users/:uuid` – remove a user.
   - `/api/todo` – Toucan2-backed CRUD endpoints; see `docs/todo-api.md` for payload details.
 - Database access uses `next.jdbc` for the user endpoints and Toucan2 ORM for todos. Configure the `DATABASE_URL` environment variable or update `acme.server.db/default-database-url`.
+- All `/api/users` and `/api/todo` calls now require an `Authorization: Bearer <token>` header. Obtain the token from `/api/auth/login` and set `ACME_JWT_SECRET` (plus the optional `ACME_JWT_TTL_SECONDS`/`ACME_JWT_TTL_MINUTES`) in any non-local environment.
+- See `docs/jwt-auth.md` for the required `"UserTable"` alterations, helper snippets for hashing passwords, and example `curl` flows.
 - File changes under `src/main` or `src/dev` are picked up automatically via Ring's `wrap-reload`; set `ACME_DISABLE_RELOAD=true` before starting the server to turn this off (e.g. in production).
 - Request and response payloads for the todo API are validated with Malli and Reitit coercion, so malformed payloads return structured 400/422 JSON errors automatically.
 

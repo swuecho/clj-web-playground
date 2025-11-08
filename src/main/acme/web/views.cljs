@@ -57,7 +57,8 @@
       (fn []
         (let [{:keys [label description]} (get sidebar/sidebar-nav-map @active)
               user-email (or (:email @current-user)
-                             (:username @current-user))]
+                             (:name @current-user)
+                             (:uuid @current-user))]
           [:div {:class "min-h-screen bg-base-200/60 text-base-content"}
            [:div {:class "flex min-h-screen flex-col md:flex-row"}
             [sidebar/sidebar {:active-id @active
