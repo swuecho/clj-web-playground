@@ -57,13 +57,22 @@
            :responses {200 {:body [:map [:status [:enum "ok" "error"]]]}}}}]
 
    ["/api/auth/login"
-    {:post {:summary "Authenticate and issue a JWT"
+   {:post {:summary "Authenticate and issue a JWT"
             :tags ["Auth"]
             :handler #'auth-handler/login-response
             :parameters {:body auth.schema/login-body}
             :responses {200 {:body auth.schema/login-response}
                         400 {:body [:map [:error :string]]}
                         401 {:body [:map [:error :string]]}}}}]
+
+  ["/api/auth/register"
+   {:post {:summary "Register a new user"
+           :tags ["Auth"]
+           :handler #'auth-handler/register-response
+           :parameters {:body auth.schema/register-body}
+           :responses {201 {:body user.schema/user-response}
+                       400 {:body [:map [:error :string]]}
+                       409 {:body [:map [:error :string]]}}}}]
 
    ["/api/todo"
     {:middleware [auth-middleware/wrap-require-identity]
