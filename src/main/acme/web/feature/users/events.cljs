@@ -1,6 +1,5 @@
 (ns acme.web.feature.users.events
   (:require
-   [acme.web.db :as db]
    [acme.web.feature.toast.events :as toast]
    [acme.web.http :as http]
    [ajax.core :as ajax]
