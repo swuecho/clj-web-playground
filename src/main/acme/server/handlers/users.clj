@@ -207,41 +207,39 @@
 (defn update-user-response [{:keys [parameters path-params body-params]}]
   (let [uuid (or (get-in parameters [:path :uuid]) (:uuid path-params))
         uuid (some-> uuid str/trim)
-        uuid-param (->uuid uuid)
-        response
-        (cond
-          (str/blank? uuid)
-          (http/respond-json {:error "User uuid is required"} 400)
+        uuid-param (->uuid uuid)]
+    (cond
+      (str/blank? uuid)
+      (http/respond-json {:error "User uuid is required"} 400)
 
-          (nil? uuid-param)
-          (http/respond-json {:error "Invalid uuid format"} 400)
+      (nil? uuid-param)
+      (http/respond-json {:error "Invalid uuid format"} 400)
 
-          :else
-          (let [raw-body (or body-params (:body parameters))
-                _ (when (and raw-body (not (map? raw-body)))
-                    (println "[users] unexpected body type" (type raw-body)))
-                body (normalize-request-map raw-body)
-                {:keys [status message updates]} (validate-update uuid-param body)]
-            (if updates
-              (let [prepared-updates (cond-> updates
-                                       (:password updates)
-                                       (-> (assoc :password-hash (auth/hash-password (:password updates)))
-                                           (dissoc :password)))]
-                (if-let [{:keys [sql params]} (build-update-sql prepared-updates)]
-                  (let [statement (conj params uuid-param)]
-                    (try
-                      (let [updated (db/with-transaction
-                                      (db/query-one (into [sql] statement)))]
-                        (if updated
-                          (http/respond-json updated status)
-                          (http/not-found nil)))
-                      (catch SQLException ex
-                        (throw ex))))
-                  (http/respond-json {:error "Supply at least one field to update"} 400))
-              (http/respond-json {:error message} status))))]
-    (when (var? response)
-      (println "[users] handler produced var response" response))
-    response))
+      :else
+      (let [raw-body (or body-params (:body parameters))
+            _ (when (and raw-body (not (map? raw-body)))
+                (println "[users] unexpected body type" (type raw-body)))
+            body (normalize-request-map raw-body)
+            {:keys [status message updates]} (validate-update uuid-param body)]
+        (if-not updates
+          (http/respond-json {:error message} status)
+          (let [prepared-updates (cond-> updates
+                                   (:password updates)
+                                   (-> (assoc :password-hash (auth/hash-password (:password updates)))
+                                       (dissoc :password)))
+                sql-info (build-update-sql prepared-updates)]
+            (if-not sql-info
+              (http/respond-json {:error "Supply at least one field to update"} 400)
+              (let [{:keys [sql params]} sql-info
+                    statement (conj params uuid-param)]
+                (try
+                  (let [updated (db/with-transaction
+                                  (db/query-one (into [sql] statement)))]
+                    (if updated
+                      (http/respond-json updated status)
+                      (http/not-found nil)))
+                  (catch SQLException ex
+                    (throw ex))))))))))
 
 (defn delete-user-response [{:keys [parameters path-params]}]
   (let [uuid (or (get-in parameters [:path :uuid]) (:uuid path-params))
