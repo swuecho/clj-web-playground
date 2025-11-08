@@ -11,7 +11,10 @@
    :auth {:token nil
           :expires-at nil
           :logging-in? false
-          :error nil}
+          :error nil
+          :mode :login
+          :register {:submitting? false
+                     :error nil}}
    :users []
    :loading? false
    :error nil

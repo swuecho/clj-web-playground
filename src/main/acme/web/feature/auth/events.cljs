@@ -14,6 +14,12 @@
     (when (seq trimmed)
       (str/lower-case trimmed))))
 
+(def password-min-length 8)
+
+(def default-register-state
+  {:submitting? false
+   :error nil})
+
 (defn- reset-auth [db]
   (-> db
       (assoc :isLoggedIn? false)
@@ -21,7 +27,9 @@
       (assoc-in [:auth :token] nil)
       (assoc-in [:auth :expires-at] nil)
       (assoc-in [:auth :logging-in?] false)
-      (assoc-in [:auth :error] nil)))
+      (assoc-in [:auth :error] nil)
+      (assoc-in [:auth :mode] :login)
+      (assoc-in [:auth :register] default-register-state)))
 
 (defn- hydrate-auth [db {:keys [token expires-at user]}]
   (-> db
@@ -30,7 +38,9 @@
       (assoc-in [:auth :token] token)
       (assoc-in [:auth :expires-at] expires-at)
       (assoc-in [:auth :logging-in?] false)
-      (assoc-in [:auth :error] nil)))
+      (assoc-in [:auth :error] nil)
+      (assoc-in [:auth :mode] :login)
+      (assoc-in [:auth :register] default-register-state)))
 
 (defn- admin-user? [user]
   (= "admin" (:role user)))
@@ -57,8 +67,9 @@
        (str/blank? trimmed-password)
        {:db (assoc-in db [:auth :error] "Password is required")}
 
-       (< (count trimmed-password) 8)
-       {:db (assoc-in db [:auth :error] "Password must be at least 8 characters")}
+      (< (count trimmed-password) password-min-length)
+      {:db (assoc-in db [:auth :error]
+                     (str "Password must be at least " password-min-length " characters"))}
 
        :else
        {:db (-> db
@@ -108,6 +119,87 @@
      {:db (-> db
               (assoc-in [:auth :logging-in?] false)
               (assoc-in [:auth :error] message))
+      :dispatch [::toast/enqueue-toast {:message message :variant :error}]})))
+
+(rf/reg-event-db
+ ::set-auth-mode
+ (fn [db [_ mode]]
+   (let [allowed? (#{:login :register} mode)
+         next-mode (if allowed? mode :login)
+         next-db (assoc-in db [:auth :mode] next-mode)]
+     (if (= next-mode :register)
+       (-> next-db
+           (assoc-in [:auth :register :error] nil)
+           (assoc-in [:auth :register :submitting?] false)
+           (assoc-in [:auth :error] nil))
+        next-db))))
+
+(rf/reg-event-db
+ ::clear-register-state
+ (fn [db _]
+   (assoc-in db [:auth :register] default-register-state)))
+
+(rf/reg-event-fx
+ ::register
+ (fn [{:keys [db]} [_ {:keys [email password confirm-password]}]]
+   (let [normalized-email (normalize-email email)
+         trimmed-password (some-> password str str/trim)
+         trimmed-confirm (some-> confirm-password str str/trim)
+         error-response (fn [message]
+                          {:db (-> db
+                                   (assoc-in [:auth :register :submitting?] false)
+                                   (assoc-in [:auth :register :error] message))})]
+     (cond
+       (str/blank? (or email ""))
+       (error-response "Email is required")
+
+       (nil? normalized-email)
+       (error-response "Email is invalid")
+
+       (str/blank? (or trimmed-password ""))
+       (error-response "Password is required")
+
+       (< (count trimmed-password) password-min-length)
+       (error-response (str "Password must be at least " password-min-length " characters"))
+
+       (not= trimmed-password trimmed-confirm)
+       (error-response "Passwords do not match")
+
+       :else
+       {:db (-> db
+                (assoc-in [:auth :register :submitting?] true)
+                (assoc-in [:auth :register :error] nil))
+        :http-xhrio {:method :post
+                     :uri "/api/auth/register"
+                     :timeout 8000
+                     :headers {"Accept" "application/json"}
+                     :params {:email normalized-email
+                              :password trimmed-password}
+                     :format (ajax/json-request-format)
+                     :response-format (ajax/json-response-format {:keywords? true})
+                     :on-success [::register-success normalized-email]
+                     :on-failure [::register-failed]}}))))
+
+(rf/reg-event-fx
+ ::register-success
+ (fn [{:keys [db]} [_ email _response]]
+   {:db (-> db
+            (assoc-in [:auth :register] default-register-state)
+            (assoc-in [:auth :mode] :login))
+    :dispatch [::toast/enqueue-toast {:message (str "Account created for " email ". Please log in.")
+                                      :variant :success}]}))
+
+(rf/reg-event-fx
+ ::register-failed
+ (fn [{:keys [db]} [_ {:keys [status response status-text]}]]
+   (let [message (or (:error response)
+                     (cond
+                       (= status 0) "Network error"
+                       status (str "Registration failed (" status ")" (when status-text (str ": " status-text)))
+                       :else "Registration failed"))]
+     {:db (-> db
+              (assoc-in [:auth :register :submitting?] false)
+              (assoc-in [:auth :register :error] message))
       :dispatch [::toast/enqueue-toast {:message message :variant :error}]})))
 
 (rf/reg-event-fx

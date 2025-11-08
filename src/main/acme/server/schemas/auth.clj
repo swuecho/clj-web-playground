@@ -14,6 +14,12 @@
    [:email user.schema/email-schema]
    [:password user.schema/password-schema]])
 
+(def register-body
+  [:map
+   [:email user.schema/email-schema]
+   [:password user.schema/password-schema]
+   [:name {:optional true} non-blank-string]])
+
 (def login-response
   [:map
    [:access_token non-blank-string]

@@ -26,3 +26,18 @@
  ::error
  (fn [db]
    (get-in db [:auth :error])))
+
+(rf/reg-sub
+ ::auth-mode
+ (fn [db]
+   (get-in db [:auth :mode] :login)))
+
+(rf/reg-sub
+ ::registering?
+ (fn [db]
+   (get-in db [:auth :register :submitting?])))
+
+(rf/reg-sub
+ ::register-error
+ (fn [db]
+   (get-in db [:auth :register :error])))

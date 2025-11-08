@@ -3,6 +3,7 @@
    [clojure.string :as str]
    [acme.server.auth :as auth]
    [acme.server.db :as db]
+   [acme.server.handlers.users :as user-handlers]
    [acme.server.http :as http]
    [acme.server.users.validation :as user.validation]))
 
@@ -49,4 +50,22 @@
                                 :user sanitized}))
           (http/respond-json {:error "Invalid email or password"} 401))
         (http/respond-json {:error "Invalid email or password"} 401))))
-)
+
+(defn- derive-name [{:keys [name email]}]
+  (let [trimmed (some-> name str str/trim)]
+    (if (seq trimmed)
+      trimmed
+      (or (some-> email
+                  (str/split #"@" 2)
+                  first)
+          email
+          ""))))
+
+(defn register-response [{:keys [parameters body-params]}]
+  (let [body (or (:body parameters) body-params {})
+        sanitized {:name (derive-name body)
+                   :age 0
+                   :email (:email body)
+                   :password (:password body)}]
+    (user-handlers/add-user-response {:parameters {:body sanitized}
+                                      :body-params sanitized})))
