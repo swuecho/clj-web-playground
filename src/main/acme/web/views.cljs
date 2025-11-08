@@ -99,7 +99,7 @@
                 :todos [todos-panel]
                 :demo [daisy-ui-showcase]
                 [:div {:class "rounded-xl border border-dashed border-base-300 bg-base-100/60 p-16 text-center text-base-content/60"}
-                 "Section coming soon."])]]]]])))))
+                 "Section coming soon."])]]]])))))
 
 (defn main-panel2 []
   [:<>
