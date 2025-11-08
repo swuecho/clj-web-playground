@@ -1,6 +1,6 @@
 (ns acme.server.services.todo-test
   (:require
-   [clojure.test :refer [deftest is testing]]
+   [clojure.test :refer [deftest is]]
    [acme.server.services.todo :as sut])
   (:import
    (java.util UUID)))
@@ -10,9 +10,9 @@
                 (fn []
                   [{:id 1 :title "Make coffee" :completed nil}
                    {:id 2 :title "Write tests" :completed true}])]
-    (is (= [{:id 1 :title "Make coffee" :completed false}
-            {:id 2 :title "Write tests" :completed true}]
-           (sut/list-todos {:role "admin"}))))))
+    (is (= [{:id 1 :title "Make coffee" :completed false :user_id nil}
+            {:id 2 :title "Write tests" :completed true :user_id nil}]
+           (sut/list-todos {:role "admin"})))))
 
 (deftest create-todo-normalizes-returned-instance
   (let [user-id (str (UUID/randomUUID))]

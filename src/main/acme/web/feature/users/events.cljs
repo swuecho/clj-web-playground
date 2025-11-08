@@ -26,20 +26,32 @@
 (defn- unauthorized? [status]
   (= status 401))
 
+(defn- forbidden? [status]
+  (= status 403))
+
+(defn- admin? [db]
+  (= "admin" (get-in db [:user :role])))
+
 (rf/reg-event-fx
  ::fetch-users
  (fn [{:keys [db]} _]
-   (let [headers (http/authorized-headers db)]
+   (if-not (admin? db)
      {:db (-> db
-              (assoc :loading? true)
-              (assoc :error nil))
-      :http-xhrio {:method :get
-                   :uri "/api/users"
-                   :timeout 8000
-                   :headers headers
-                   :response-format (ajax/json-response-format {:keywords? true})
-                   :on-success [::users-loaded]
-                   :on-failure [::fetch-failed]}})))
+              (assoc :loading? false)
+              (assoc :error "Admin access required"))
+      :dispatch [::toast/enqueue-toast {:message "You need admin access to view users"
+                                        :variant :warning}]}
+     (let [headers (http/authorized-headers db)]
+       {:db (-> db
+                (assoc :loading? true)
+                (assoc :error nil))
+        :http-xhrio {:method :get
+                     :uri "/api/users"
+                     :timeout 8000
+                     :headers headers
+                     :response-format (ajax/json-response-format {:keywords? true})
+                     :on-success [::users-loaded]
+                     :on-failure [::fetch-failed]}}))))
 
 (rf/reg-event-db
  ::users-loaded
@@ -51,15 +63,21 @@
 (rf/reg-event-fx
  ::fetch-failed
  (fn [{:keys [db]} [_ {:keys [status status-text]}]]
-   (let [msg (str "Request failed"
-                  (when status (str " (" status ")"))
-                  (when status-text (str ": " status-text)))
-         unauthorized (unauthorized? status)]
-      (cond-> {:db (-> db
+   (let [unauthorized (unauthorized? status)
+         forbidden (forbidden? status)
+         msg (cond
+               unauthorized "Session expired"
+               forbidden "Admin access required"
+               :else (str "Request failed"
+                          (when status (str " (" status ")"))
+                          (when status-text (str ": " status-text))))]
+     (cond-> {:db (-> db
                       (assoc :loading? false)
                       (assoc :error msg))}
        unauthorized (assoc :dispatch [:acme.web.feature.auth.events/session-expired nil])
-       (not unauthorized) (assoc :dispatch [::toast/enqueue-toast {:message msg :variant :error}])))))
+       (and (not unauthorized) (not forbidden))
+       (assoc :dispatch [::toast/enqueue-toast {:message msg :variant :error}])
+       forbidden (assoc :dispatch [::toast/enqueue-toast {:message msg :variant :warning}])))))
 
 (rf/reg-event-db
  ::open-add-user-dialog

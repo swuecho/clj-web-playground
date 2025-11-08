@@ -6,16 +6,16 @@ The backend now protects every `/api/todo` and `/api/users` endpoint with bearer
 
 `"UserTable"` now stores login credentials in addition to the demo profile fields:
 
-| Column         | Type                | Notes                                  |
-|----------------|---------------------|----------------------------------------|
-| `uuid`         | `uuid`              | Primary key (supplied or generated).    |
-| `name`         | `varchar(255)`      | Required.                              |
-| `age`          | `integer`           | Required, must be ≥ 0.                 |
-| `email`        | `varchar(255)`      | Required, stored in lowercase, unique. |
-| `password_hash`| `text`              | Required, BCrypt hash created by the API. |
-| `role`         | `text`              | Required, either `user` (default) or `admin`. |
-| `created_at`   | `timestamptz`       | Optional convenience timestamp.        |
-| `updated_at`   | `timestamptz`       | Optional convenience timestamp.        |
+| Column          | Type           | Notes                                         |
+| --------------- | -------------- | --------------------------------------------- |
+| `uuid`          | `uuid`         | Primary key (supplied or generated).          |
+| `name`          | `varchar(255)` | Required.                                     |
+| `age`           | `integer`      | Required, must be ≥ 0.                        |
+| `email`         | `varchar(255)` | Required, stored in lowercase, unique.        |
+| `password_hash` | `text`         | Required, BCrypt hash created by the API.     |
+| `role`          | `text`         | Required, either `user` (default) or `admin`. |
+| `created_at`    | `timestamptz`  | Optional convenience timestamp.               |
+| `updated_at`    | `timestamptz`  | Optional convenience timestamp.               |
 
 If you already had the table in place, apply a migration similar to:
 
@@ -60,6 +60,13 @@ alter table "UserTable"
   alter column email set not null,
   alter column password_hash set not null,
   alter column role set not null;
+
+-- Promote at least one administrator so someone can manage users/todos.
+update "UserTable" set role = 'admin' where email = 'demo@example.com';
+```
+
+```sql
+alter table todo_items add column user_id uuid;
 ```
 
 ## Environment variables
@@ -85,7 +92,13 @@ Response:
   "token_type": "Bearer",
   "expires_at": "2024-06-01T18:32:11Z",
   "expires_in": 3600,
-  "user": {"uuid": "…", "name": "Demo", "email": "demo@example.com", "age": 42}
+  "user": {
+    "uuid": "…",
+    "name": "Demo",
+    "email": "demo@example.com",
+    "age": 42,
+    "role": "user"
+  }
 }
 ```
 

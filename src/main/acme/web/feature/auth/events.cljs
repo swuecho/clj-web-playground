@@ -32,6 +32,9 @@
       (assoc-in [:auth :logging-in?] false)
       (assoc-in [:auth :error] nil)))
 
+(defn- admin-user? [user]
+  (= "admin" (:role user)))
+
 (rf/reg-fx
  ::persist-auth
  (fn [snapshot]
@@ -75,20 +78,24 @@
 (rf/reg-event-fx
  ::login-success
  (fn [{:keys [db]} [_ {:keys [access_token expires_at user]}]]
-   {:db (-> db
-            (assoc :isLoggedIn? true)
-            (assoc :user user)
-            (assoc-in [:auth :token] access_token)
-            (assoc-in [:auth :expires-at] expires_at)
-            (assoc-in [:auth :logging-in?] false)
-            (assoc-in [:auth :error] nil))
-    :dispatch-n [[::user-events/fetch-users]
-                 [::todo-events/fetch-todos]
-                 [::toast/enqueue-toast {:message (str "Welcome back, " (or (:name user) (:email user)))
-                                         :variant :success}]]
-    ::persist-auth {:token access_token
-                    :expires-at expires_at
-                    :user user}}))
+   (let [admin? (admin-user? user)
+         welcome (str "Welcome back, " (or (:name user) (:email user)))
+         dispatches (cond-> []
+                       admin? (conj [::user-events/fetch-users])
+                       true (conj [::todo-events/fetch-todos])
+                       true (conj [::toast/enqueue-toast {:message welcome
+                                                           :variant :success}]))]
+     {:db (-> db
+              (assoc :isLoggedIn? true)
+              (assoc :user user)
+              (assoc-in [:auth :token] access_token)
+              (assoc-in [:auth :expires-at] expires_at)
+              (assoc-in [:auth :logging-in?] false)
+              (assoc-in [:auth :error] nil))
+      :dispatch-n dispatches
+      ::persist-auth {:token access_token
+                      :expires-at expires_at
+                      :user user}})))
 
 (rf/reg-event-fx
  ::login-failed
@@ -126,8 +133,11 @@
  (fn [{:keys [db]} _]
    (if-let [{:keys [token] :as snapshot} (storage/load-auth)]
      (if (valid-token? token)
-       {:db (hydrate-auth db snapshot)
-        :dispatch-n [[::user-events/fetch-users]
-                     [::todo-events/fetch-todos]]}
+       (let [admin? (admin-user? (:user snapshot))
+             dispatches (cond-> []
+                           admin? (conj [::user-events/fetch-users])
+                           true (conj [::todo-events/fetch-todos]))]
+         {:db (hydrate-auth db snapshot)
+          :dispatch-n dispatches})
        {::persist-auth nil})
      nil)))

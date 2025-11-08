@@ -6,7 +6,7 @@
    [clojure.string :as str]
    [re-frame.core :as rf]))
 
-(defn overview-panel [{:keys [on-view-users on-view-todos]}]
+(defn overview-panel [{:keys [on-view-users on-view-todos can-manage-users?]}]
   (let [users (rf/subscribe [::users-subs/users])
         todos (rf/subscribe [::todos-subs/todos-items])]
     (fn []
@@ -30,66 +30,77 @@
                          (let [s (str value)]
                            (if (> (count s) 8)
                              (str (subs s 0 8) "…")
-                             s))))]
+                             s))))
+            metric-cards (cond-> []
+                           can-manage-users?
+                           (conj [metric-card {:title "Active Users"
+                                               :value (str (count user-items))
+                                               :subtext "People currently in the directory"}])
+                           true
+                           (conj [metric-card {:title "Total Todos"
+                                               :value (str total-todos)
+                                               :subtext (if (pos? total-todos)
+                                                          (str completed " completed • " pending " open")
+                                                          "No todos created yet")}])
+                           true
+                           (conj [metric-card {:title "Completion Rate"
+                                               :value (str completion-rate "%")
+                                               :subtext (if (pos? total-todos)
+                                                          "Based on completed todos"
+                                                          "Add todos to start tracking progress")}])
+                           true
+                           (conj [metric-card {:title "Pending Items"
+                                               :value (str pending)
+                                               :subtext "Waiting for completion"}]))]
         [:div {:class "space-y-8"}
          [:div {:class "grid gap-5 sm:grid-cols-2 xl:grid-cols-4"}
-          [metric-card {:title "Active Users"
-                        :value (str (count user-items))
-                        :subtext "People currently in the directory"}]
-          [metric-card {:title "Total Todos"
-                        :value (str total-todos)
-                        :subtext (if (pos? total-todos)
-                                   (str completed " completed • " pending " open")
-                                   "No todos created yet")}]
-          [metric-card {:title "Completion Rate"
-                        :value (str completion-rate "%")
-                        :subtext (if (pos? total-todos)
-                                   "Based on completed todos"
-                                   "Add todos to start tracking progress")}]
-          [metric-card {:title "Pending Items"
-                        :value (str pending)
-                        :subtext "Waiting for completion"}]]
-         [:div {:class "grid gap-6 lg:grid-cols-2"}
-          [:section {:class "rounded-xl border border-base-200 bg-base-100/95 p-6 shadow-sm"}
-           [:div {:class "flex items-center justify-between gap-3"}
-            [:div
-             [:h3 {:class "text-lg font-semibold text-base-content"} "Recent Users"]
-             [:p {:class "text-sm text-base-content/70"}
+          (for [[idx card] (map-indexed vector metric-cards)]
+            ^{:key idx} card)]
+         [:div {:class (if can-manage-users?
+                         "grid gap-6 lg:grid-cols-2"
+                         "space-y-6")}
+          (when can-manage-users?
+            [:section {:class "rounded-xl border border-base-200 bg-base-100/95 p-6 shadow-sm"}
+             [:div {:class "flex items-center justify-between gap-3"}
+              [:div
+               [:h3 {:class "text-lg font-semibold text-base-content"} "Recent Users"]
+               [:p {:class "text-sm text-base-content/70"}
+                (if (seq recent-users)
+                  "Latest additions to your workspace"
+                  "Invite your first user to get started.")]]
+              (when on-view-users
+                [:button {:type "button"
+                          :class "btn btn-sm btn-outline"
+                          :on-click #(when on-view-users (on-view-users))}
+                 "View all"])]
+             [:div {:class "mt-4 space-y-3"}
               (if (seq recent-users)
-                "Latest additions to your workspace"
-                "Invite your first user to get started.")]]
-            [:button {:type "button"
-                      :class "btn btn-sm btn-outline"
-                      :on-click on-view-users}
-             "View all"]]
-           [:div {:class "mt-4 space-y-3"}
-            (if (seq recent-users)
-              (map-indexed
-               (fn [idx {:keys [uuid name age]}]
-                 (let [initial (initials name)
-                       short (short-id uuid)
-                       display-age (when age (str age " yrs"))]
-                   ^{:key (or uuid idx)}
-                   [:div {:class "flex items-center justify-between gap-3 rounded-xl border border-base-200 bg-base-100/90 px-4 py-3"}
-                    [:div {:class "flex items-center gap-3"}
-                     [:div {:class "flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-base font-semibold text-primary"}
-                      initial]
-                     [:div
-                      [:p {:class "font-semibold text-base-content"}
-                       (or name "Unnamed user")]
-                      (when short
-                        [:p {:class "text-xs font-mono text-base-content/60"} short])]]
-                    [:span {:class "text-sm font-medium text-base-content/70"}
-                     (or display-age "-")]]))
-               recent-users)
-              [:div {:class "rounded-2xl border border-dashed border-base-200 bg-base-100/60 px-4 py-6 text-center text-sm text-base-content/60"}
-               "No users available yet."])]]
+                (map-indexed
+                 (fn [idx {:keys [uuid name age]}]
+                   (let [initial (initials name)
+                         short (short-id uuid)
+                         display-age (when age (str age " yrs"))]
+                     ^{:key (or uuid idx)}
+                     [:div {:class "flex items-center justify-between gap-3 rounded-xl border border-base-200 bg-base-100/90 px-4 py-3"}
+                      [:div {:class "flex items-center gap-3"}
+                       [:div {:class "flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-base font-semibold text-primary"}
+                        initial]
+                       [:div
+                        [:p {:class "font-semibold text-base-content"}
+                         (or name "Unnamed user")]
+                        (when short
+                          [:p {:class "text-xs font-mono text-base-content/60"} short])]]
+                      [:span {:class "text-sm font-medium text-base-content/70"}
+                       (or display-age "-")]]))
+                 recent-users)
+                [:div {:class "rounded-2xl border border-dashed border-base-200 bg-base-100/60 px-4 py-6 text-center text-sm text-base-content/60"}
+                 "No users available yet."])]])
           [:section {:class "rounded-xl border border-base-200 bg-base-100/95 p-6 shadow-sm"}
            [:div {:class "flex items-center justify-between gap-3"}
             [:div
              [:h3 {:class "text-lg font-semibold text-base-content"} "Todo Highlights"]
-             [:p {:class "text-sm text-base-content/70"}
-              (if (seq recent-todos)
+              [:p {:class "text-sm text-base-content/70"}
+               (if (seq recent-todos)
                 "A quick look at what's on deck"
                 "Create a todo to start tracking work")]]
             [:button {:type "button"
