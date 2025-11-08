@@ -77,29 +77,29 @@
                               :on-select #(reset! active %)
                               :user-email user-email
                               :nav-items nav-items
-                              :on-logout logout!}]]
-           [:main {:class "flex-1 min-h-0"}
-            [:div {:class "mx-auto flex h-full max-h-screen flex-col gap-10 overflow-y-auto px-6 py-10"}
-             [:header {:class "flex flex-wrap items-center justify-between gap-4"}
-              [:div {:class "space-y-1"}
-               [:p {:class "text-xs font-semibold uppercase tracking-wide text-base-content/60"}
-                "Workspace"]
-               [:h1 {:class "text-3xl font-semibold text-base-content"} (or label "Overview")]
-               (when description
-                 [:p {:class "text-sm text-base-content/70"} description])]]
-             [:div {:class "space-y-10"}
-              (case active-id
-                :overview [overview-panel {:on-view-users (when can-manage-users? #(reset! active :users))
-                                           :on-view-todos #(reset! active :todos)
-                                           :can-manage-users? can-manage-users?}]
-                :users (if can-manage-users?
-                         [users-panel]
-                         [:div {:class "rounded-xl border border-dashed border-base-300 bg-base-100/60 p-10 text-center text-base-content/60"}
-                          "Admin access required"])
-                :todos [todos-panel]
-                :demo [daisy-ui-showcase]
-                [:div {:class "rounded-xl border border-dashed border-base-300 bg-base-100/60 p-16 text-center text-base-content/60"}
-                 "Section coming soon."])]]]])))))
+                              :on-logout logout!}]
+            [:main {:class "flex-1 min-h-0"}
+             [:div {:class "mx-auto flex h-full max-h-screen flex-col gap-10 overflow-y-auto px-6 py-10"}
+              [:header {:class "flex flex-wrap items-center justify-between gap-4"}
+               [:div {:class "space-y-1"}
+                [:p {:class "text-xs font-semibold uppercase tracking-wide text-base-content/60"}
+                 "Workspace"]
+                [:h1 {:class "text-3xl font-semibold text-base-content"} (or label "Overview")]
+                (when description
+                  [:p {:class "text-sm text-base-content/70"} description])]]
+              [:div {:class "space-y-10"}
+               (case active-id
+                 :overview [overview-panel {:on-view-users (when can-manage-users? #(reset! active :users))
+                                            :on-view-todos #(reset! active :todos)
+                                            :can-manage-users? can-manage-users?}]
+                 :users (if can-manage-users?
+                          [users-panel]
+                          [:div {:class "rounded-xl border border-dashed border-base-300 bg-base-100/60 p-10 text-center text-base-content/60"}
+                           "Admin access required"])
+                 :todos [todos-panel]
+                 :demo [daisy-ui-showcase]
+                 [:div {:class "rounded-xl border border-dashed border-base-300 bg-base-100/60 p-16 text-center text-base-content/60"}
+                  "Section coming soon."])]]]]])))))
 
 (defn main-panel2 []
   [:<>
