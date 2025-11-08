@@ -1,12 +1,18 @@
 (ns acme.web.feature.users.events
   (:require
-   [acme.web.db :as db]
    [acme.web.feature.toast.events :as toast]
    [ajax.core :as ajax]
    [clojure.string :as str]
    [day8.re-frame.http-fx]
    [re-frame.core :as rf]))
-
+;> (rf/reg-event-fx event-id interceptors handler-fn)
+;
+;  - event-id – keyword (or vector) that identifies the event.
+;  - interceptors – optional chain (vector or a single interceptor) that runs before/after the handler. You can skip it; in that case the next
+;  argument is treated as the handler.
+;  - handler-fn – (fn event-handler [coeffects event-vector] …); typically you destructure {:keys [db]} coeffects and return an effects map (e.g.
+;  {:db … :dispatch …}).
+;   Common shortcut: (rf/reg-event-fx ::id (fn [{:keys [db]} [_ arg]] {:db …})) since interceptors default to [].
 (rf/reg-event-fx
  ::fetch-users
  (fn [{:keys [db]} _]
@@ -20,7 +26,8 @@
                  :response-format (ajax/json-response-format {:keywords? true})
                  :on-success [::users-loaded]
                  :on-failure [::fetch-failed]}}))
-
+;  - Once the request completes, re-frame dispatches either ::users-loaded with the response body, or ::fetch-failed if the request errors. Those
+;  follow-up events are where you’d store the loaded users or surface the error to the UI.
 (rf/reg-event-db
  ::users-loaded
  (fn [db [_ users]]
