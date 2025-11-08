@@ -37,6 +37,9 @@
        (str/blank? trimmed-password)
        {:db (assoc-in db [:auth :error] "Password is required")}
 
+       (< (count trimmed-password) 8)
+       {:db (assoc-in db [:auth :error] "Password must be at least 8 characters")}
+
        :else
        {:db (-> db
                 (assoc-in [:auth :logging-in?] true)
@@ -50,7 +53,7 @@
                      :format (ajax/json-request-format)
                      :response-format (ajax/json-response-format {:keywords? true})
                      :on-success [::login-success]
-                     :on-failure [::login-failed]}})))
+                     :on-failure [::login-failed]}}))))
 
 (rf/reg-event-fx
  ::login-success
@@ -86,7 +89,7 @@
    (let [next-db (reset-auth db)]
      (cond-> {:db next-db}
        (and reason (not silent?))
-       (assoc :dispatch [::toast/enqueue-toast {:message reason :variant :info}]))))
+       (assoc :dispatch [::toast/enqueue-toast {:message reason :variant :info}])))))
 
 (rf/reg-event-fx
  ::session-expired

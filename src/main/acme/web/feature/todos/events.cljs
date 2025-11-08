@@ -1,7 +1,6 @@
 (ns acme.web.feature.todos.events
   (:require
    [acme.web.db :as db]
-   [acme.web.feature.auth.events :as auth-events]
    [acme.web.feature.toast.events :as toast]
    [acme.web.http :as http]
    [ajax.core :as ajax]
@@ -43,7 +42,7 @@
                    :headers headers
                    :response-format (ajax/json-response-format {:keywords? true})
                    :on-success [::todos-loaded]
-                   :on-failure [::fetch-todos-failed]}}))
+                   :on-failure [::fetch-todos-failed]}})))
 
 (rf/reg-event-db
  ::todos-loaded
@@ -66,7 +65,7 @@
       (cond-> {:db (-> db
                        (assoc-in [:todos :loading?] false)
                        (assoc-in [:todos :error] msg))}
-        (unauthorized? status) (assoc :dispatch [::auth-events/session-expired nil])
+        (unauthorized? status) (assoc :dispatch [:acme.web.feature.auth.events/session-expired nil])
         (not (unauthorized? status))
         (assoc :dispatch [::toast/enqueue-toast {:message msg :variant :error}])))))
 
@@ -173,7 +172,7 @@
                        :format (ajax/json-request-format)
                        :response-format (ajax/json-response-format {:keywords? true})
                        :on-success [::todo-created]
-                       :on-failure [::add-todo-failed]}}))))
+                       :on-failure [::add-todo-failed]}})))))
 
 (rf/reg-event-fx
  ::todo-created
@@ -196,7 +195,7 @@
       (cond-> {:db (-> db
                        (assoc-in [:todos :add :submitting?] false)
                        (assoc-in [:todos :error] msg))}
-        (unauthorized? status) (assoc :dispatch [::auth-events/session-expired nil])
+        (unauthorized? status) (assoc :dispatch [:acme.web.feature.auth.events/session-expired nil])
         (not (unauthorized? status))
         (assoc :dispatch [::toast/enqueue-toast {:message msg :variant :error}])))))
 
@@ -302,7 +301,7 @@
       (cond-> {:db (-> db
                        (assoc-in [:todos :edit :submitting?] false)
                        (assoc-in [:todos :error] msg))}
-        (unauthorized? status) (assoc :dispatch [::auth-events/session-expired nil])
+        (unauthorized? status) (assoc :dispatch [:acme.web.feature.auth.events/session-expired nil])
         (not (unauthorized? status))
         (assoc :dispatch [::toast/enqueue-toast {:message msg :variant :error}])))))
 
@@ -322,7 +321,7 @@
                         :format (ajax/url-request-format)
                         :response-format (ajax/json-response-format {:keywords? true})
                         :on-success [::todo-deleted id-str]
-                        :on-failure [::delete-todo-failed id-str]}}))))
+                        :on-failure [::delete-todo-failed id-str]}})))))
 
 (rf/reg-event-fx
  ::todo-deleted
@@ -341,6 +340,6 @@
       (cond-> {:db (-> db
                        (update-in [:todos :pending] disj id)
                        (assoc-in [:todos :error] msg))}
-        (unauthorized? status) (assoc :dispatch [::auth-events/session-expired nil])
+        (unauthorized? status) (assoc :dispatch [:acme.web.feature.auth.events/session-expired nil])
         (not (unauthorized? status))
         (assoc :dispatch [::toast/enqueue-toast {:message msg :variant :error}])))))

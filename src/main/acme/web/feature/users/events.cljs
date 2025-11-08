@@ -1,7 +1,6 @@
 (ns acme.web.feature.users.events
   (:require
    [acme.web.db :as db]
-   [acme.web.feature.auth.events :as auth-events]
    [acme.web.feature.toast.events :as toast]
    [acme.web.http :as http]
    [ajax.core :as ajax]
@@ -56,10 +55,10 @@
                   (when status (str " (" status ")"))
                   (when status-text (str ": " status-text)))
          unauthorized (unauthorized? status)]
-     (cond-> {:db (-> db
+      (cond-> {:db (-> db
                       (assoc :loading? false)
                       (assoc :error msg))}
-       unauthorized (assoc :dispatch [::auth-events/session-expired nil])
+       unauthorized (assoc :dispatch [:acme.web.feature.auth.events/session-expired nil])
        (not unauthorized) (assoc :dispatch [::toast/enqueue-toast {:message msg :variant :error}])))))
 
 (rf/reg-event-db
@@ -163,7 +162,7 @@
                        (assoc :loading? false)
                        (assoc-in [:add-user :submitting?] false)
                        (assoc :error msg))}
-        (unauthorized? status) (assoc :dispatch [::auth-events/session-expired nil])
+        (unauthorized? status) (assoc :dispatch [:acme.web.feature.auth.events/session-expired nil])
         (not (unauthorized? status))
         (assoc :dispatch [::toast/enqueue-toast {:message msg :variant :error}])))))
 
@@ -316,7 +315,7 @@
       (cond-> {:db (-> db
                        (assoc :error msg)
                        (assoc-in [:edit-user :submitting?] false))}
-        (unauthorized? status) (assoc :dispatch [::auth-events/session-expired nil])
+        (unauthorized? status) (assoc :dispatch [:acme.web.feature.auth.events/session-expired nil])
         (not (unauthorized? status))
         (assoc :dispatch [::toast/enqueue-toast {:message msg :variant :error}])))))
 
@@ -355,6 +354,6 @@
       (cond-> {:db (-> db
                        (assoc :error msg)
                        (update :pending-deletes disj uuid))}
-        (unauthorized? status) (assoc :dispatch [::auth-events/session-expired nil])
+        (unauthorized? status) (assoc :dispatch [:acme.web.feature.auth.events/session-expired nil])
         (not (unauthorized? status))
         (assoc :dispatch [::toast/enqueue-toast {:message msg :variant :error}])))))
