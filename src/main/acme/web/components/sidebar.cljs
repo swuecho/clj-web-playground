@@ -115,21 +115,37 @@
        [:p {:class "truncate text-sm font-semibold text-base-content"}
         email]])))
 
-(defn- sidebar-footer [collapsed? toggle! email]
-  (let [email-block (user-email-block collapsed? email)]
+(defn- logout-button [{:keys [collapsed? on-logout]}]
+  (when on-logout
+    [:button {:type "button"
+              :class (str "btn btn-ghost btn-xs "
+                          (if collapsed?
+                            "w-full justify-center text-[11px]"
+                            "px-3"))
+              :on-click on-logout}
+     "Log out"]))
+
+(defn- sidebar-footer [collapsed? toggle! email on-logout]
+  (let [email-block (user-email-block collapsed? email)
+        logout-cta (logout-button {:collapsed? collapsed?
+                                   :on-logout on-logout})]
     (if collapsed?
-      [:div {:class "mt-auto flex w-full items-center gap-2"}
-       (when email-block email-block)
+      [:div {:class "mt-auto flex w-full flex-col items-center gap-2"}
+       (when email-block
+         [:div {:class "w-full"} email-block])
+       (when logout-cta logout-cta)
        [collapse-toggle-button collapsed? toggle!]]
       [:div {:class "mt-auto w-full space-y-3"}
        [help-card]
        [:div {:class "flex items-center justify-between gap-3"}
         (or email-block [:span {:class "text-sm font-semibold text-base-content/40"} "No user"])
-        [collapse-toggle-button collapsed? toggle!]]])))
+        [:div {:class "flex items-center gap-2"}
+         (when logout-cta logout-cta)
+         [collapse-toggle-button collapsed? toggle!]]]])))
 
-(defn sidebar [{:keys [active-id on-select user-email nav-items]}]
+(defn sidebar [{:keys [active-id on-select user-email nav-items on-logout]}]
   (r/with-let [collapsed? (r/atom false)]
-    (fn [{:keys [active-id on-select user-email nav-items]}]
+    (fn [{:keys [active-id on-select user-email nav-items on-logout]}]
       (let [collapsed @collapsed?
             toggle! #(swap! collapsed? not)
             nav-items (or nav-items sidebar-nav-items)]
@@ -155,4 +171,4 @@
            (for [item nav-items]
              ^{:key (:id item)}
              [nav-button item active-id on-select collapsed])]
-          [sidebar-footer collapsed toggle! user-email]]]))))
+          [sidebar-footer collapsed toggle! user-email on-logout]]]))))
