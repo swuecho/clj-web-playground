@@ -2,6 +2,7 @@
   (:require
    [acme.web.feature.todos.components.controls :as controls]
    [acme.web.feature.todos.components.table :as table]
+   [acme.web.feature.auth.subs :as auth-subs]
    [acme.web.feature.todos.events :as todo-events]
    [acme.web.feature.todos.subs :as todo-subs]
    ["@rc-component/table" :default rc-table]
@@ -12,10 +13,14 @@
         error (rf/subscribe [::todo-subs/todos-error])
         sort-config (rf/subscribe [::todo-subs/todo-sort])
         filters-config (rf/subscribe [::todo-subs/todo-filters])
-        pagination-config (rf/subscribe [::todo-subs/todo-pagination])]
+        pagination-config (rf/subscribe [::todo-subs/todo-pagination])
+        current-user (rf/subscribe [::auth-subs/user])]
     (fn []
       (let [is-loading? @loading?
             error-message @error
+            user @current-user
+            can-view-owners? (= "admin" (:role user))
+            current-user-id (:uuid user)
             {:keys [field direction]} (or @sort-config {})
             filters (or @filters-config {})
             {:keys [items page per-page total total-pages start end]}
@@ -28,7 +33,9 @@
                                                                        :direction target-direction}]))
             columns (table/build-columns {:field field
                                           :direction direction
-                                          :dispatch-sort dispatch-sort})
+                                          :dispatch-sort dispatch-sort
+                                          :show-owner? can-view-owners?
+                                          :current-user-id current-user-id})
             table-data (table/format-rows items)
             status-section (cond
                              is-loading? [:div {:class "alert alert-info"}

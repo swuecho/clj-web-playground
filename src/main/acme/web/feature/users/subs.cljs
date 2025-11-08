@@ -38,6 +38,16 @@
    (get-in db [:add-user :age])))
 
 (rf/reg-sub
+ ::add-user-email
+ (fn [db]
+   (get-in db [:add-user :email])))
+
+(rf/reg-sub
+ ::add-user-password
+ (fn [db]
+   (get-in db [:add-user :password])))
+
+(rf/reg-sub
  ::add-user-submitting?
  (fn [db]
    (get-in db [:add-user :submitting?])))
@@ -71,6 +81,16 @@
  ::edit-user-age
  (fn [db]
    (get-in db [:edit-user :age])))
+
+(rf/reg-sub
+ ::edit-user-email
+ (fn [db]
+   (get-in db [:edit-user :email])))
+
+(rf/reg-sub
+ ::edit-user-password
+ (fn [db]
+   (get-in db [:edit-user :password])))
 
 (rf/reg-sub
  ::edit-user-submitting?

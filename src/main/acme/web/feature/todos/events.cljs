@@ -2,6 +2,7 @@
   (:require
    [acme.web.db :as db]
    [acme.web.feature.toast.events :as toast]
+   [acme.web.http :as http]
    [ajax.core :as ajax]
    [clojure.string :as str]
    [day8.re-frame.http-fx]
@@ -25,19 +26,23 @@
         (max 1)
         (min last-page))))
 
+(defn- unauthorized? [status]
+  (= status 401))
+
 (rf/reg-event-fx
  ::fetch-todos
  (fn [{:keys [db]} _]
-   {:db (-> db
-            (assoc-in [:todos :loading?] true)
-            (assoc-in [:todos :error] nil))
-    :http-xhrio {:method :get
-                 :uri "/api/todo"
-                 :timeout 8000
-                 :headers {"Accept" "application/json"}
-                 :response-format (ajax/json-response-format {:keywords? true})
-                 :on-success [::todos-loaded]
-                 :on-failure [::fetch-todos-failed]}}))
+   (let [headers (http/authorized-headers db)]
+     {:db (-> db
+              (assoc-in [:todos :loading?] true)
+              (assoc-in [:todos :error] nil))
+      :http-xhrio {:method :get
+                   :uri "/api/todo"
+                   :timeout 8000
+                   :headers headers
+                   :response-format (ajax/json-response-format {:keywords? true})
+                   :on-success [::todos-loaded]
+                   :on-failure [::fetch-todos-failed]}})))
 
 (rf/reg-event-db
  ::todos-loaded
@@ -57,10 +62,12 @@
    (let [msg (str "Failed to load todos"
                   (when status (str " (" status ")"))
                   (when status-text (str ": " status-text)))]
-     {:db (-> db
-              (assoc-in [:todos :loading?] false)
-              (assoc-in [:todos :error] msg))
-      :dispatch [::toast/enqueue-toast {:message msg :variant :error}]})))
+      (cond-> {:db (-> db
+                       (assoc-in [:todos :loading?] false)
+                       (assoc-in [:todos :error] msg))}
+        (unauthorized? status) (assoc :dispatch [:acme.web.feature.auth.events/session-expired nil])
+        (not (unauthorized? status))
+        (assoc :dispatch [::toast/enqueue-toast {:message msg :variant :error}])))))
 
 (rf/reg-event-db
  ::set-todo-sort
@@ -151,20 +158,21 @@
                   (str/blank? trimmed-title) (assoc :title "Title is required"))]
      (if (seq errors)
        {:db (assoc-in db [:todos :add :errors] errors)}
-       {:db (-> db
-                (assoc-in [:todos :add :submitting?] true)
-                (assoc-in [:todos :add :errors] {})
-                (assoc-in [:todos :error] nil))
-        :http-xhrio {:method :post
-                     :uri "/api/todo"
-                     :timeout 8000
-                     :headers {"Accept" "application/json"}
-                     :params {:title trimmed-title
-                              :completed completed?}
-                     :format (ajax/json-request-format)
-                     :response-format (ajax/json-response-format {:keywords? true})
-                     :on-success [::todo-created]
-                     :on-failure [::add-todo-failed]}}))))
+       (let [headers (http/authorized-headers db)]
+         {:db (-> db
+                  (assoc-in [:todos :add :submitting?] true)
+                  (assoc-in [:todos :add :errors] {})
+                  (assoc-in [:todos :error] nil))
+          :http-xhrio {:method :post
+                       :uri "/api/todo"
+                       :timeout 8000
+                       :headers headers
+                       :params {:title trimmed-title
+                                :completed completed?}
+                       :format (ajax/json-request-format)
+                       :response-format (ajax/json-response-format {:keywords? true})
+                       :on-success [::todo-created]
+                       :on-failure [::add-todo-failed]}})))))
 
 (rf/reg-event-fx
  ::todo-created
@@ -184,10 +192,12 @@
    (let [msg (str "Failed to create todo"
                   (when status (str " (" status ")"))
                   (when status-text (str ": " status-text)))]
-     {:db (-> db
-              (assoc-in [:todos :add :submitting?] false)
-              (assoc-in [:todos :error] msg))
-      :dispatch [::toast/enqueue-toast {:message msg :variant :error}]})))
+      (cond-> {:db (-> db
+                       (assoc-in [:todos :add :submitting?] false)
+                       (assoc-in [:todos :error] msg))}
+        (unauthorized? status) (assoc :dispatch [:acme.web.feature.auth.events/session-expired nil])
+        (not (unauthorized? status))
+        (assoc :dispatch [::toast/enqueue-toast {:message msg :variant :error}])))))
 
 (rf/reg-event-fx
  ::open-edit-todo-dialog
@@ -251,14 +261,15 @@
        :else
        (let [payload (cond-> {}
                        (and title-changed? (not (str/blank? trimmed-title))) (assoc :title trimmed-title)
-                       completed-changed? (assoc :completed (boolean completed?)))]
+                       completed-changed? (assoc :completed (boolean completed?)))
+             headers (http/authorized-headers db)]
          {:db (-> db
                   (assoc-in [:todos :edit :submitting?] true)
                   (assoc-in [:todos :edit :errors] {}))
           :http-xhrio {:method :patch
                        :uri (str "/api/todo/" id-str)
                        :timeout 8000
-                       :headers {"Accept" "application/json"}
+                       :headers headers
                        :params payload
                        :format (ajax/json-request-format)
                        :response-format (ajax/json-response-format {:keywords? true})
@@ -287,27 +298,30 @@
    (let [msg (str "Failed to update todo"
                   (when status (str " (" status ")"))
                   (when status-text (str ": " status-text)))]
-     {:db (-> db
-              (assoc-in [:todos :edit :submitting?] false)
-              (assoc-in [:todos :error] msg))
-      :dispatch [::toast/enqueue-toast {:message msg :variant :error}]})))
+      (cond-> {:db (-> db
+                       (assoc-in [:todos :edit :submitting?] false)
+                       (assoc-in [:todos :error] msg))}
+        (unauthorized? status) (assoc :dispatch [:acme.web.feature.auth.events/session-expired nil])
+        (not (unauthorized? status))
+        (assoc :dispatch [::toast/enqueue-toast {:message msg :variant :error}])))))
 
 (rf/reg-event-fx
  ::delete-todo
- (fn [{:keys [db]} [_ id]]
-   (let [id-str (some-> id str str/trim)]
-     (if (str/blank? id-str)
-       {:dispatch [::toast/enqueue-toast {:message "Todo id missing"
-                                          :variant :error}]}
-       {:db (update-in db [:todos :pending] conj id-str)
-        :http-xhrio {:method :delete
-                     :uri (str "/api/todo/" id-str)
-                     :timeout 8000
-                     :headers {"Accept" "application/json"}
-                     :format (ajax/url-request-format)
-                     :response-format (ajax/json-response-format {:keywords? true})
-                     :on-success [::todo-deleted id-str]
-                     :on-failure [::delete-todo-failed id-str]}}))))
+  (fn [{:keys [db]} [_ id]]
+    (let [id-str (some-> id str str/trim)]
+      (if (str/blank? id-str)
+        {:dispatch [::toast/enqueue-toast {:message "Todo id missing"
+                                           :variant :error}]}
+        (let [headers (http/authorized-headers db)]
+          {:db (update-in db [:todos :pending] conj id-str)
+           :http-xhrio {:method :delete
+                        :uri (str "/api/todo/" id-str)
+                        :timeout 8000
+                        :headers headers
+                        :format (ajax/url-request-format)
+                        :response-format (ajax/json-response-format {:keywords? true})
+                        :on-success [::todo-deleted id-str]
+                        :on-failure [::delete-todo-failed id-str]}})))))
 
 (rf/reg-event-fx
  ::todo-deleted
@@ -323,7 +337,9 @@
    (let [msg (str "Failed to delete todo"
                   (when status (str " (" status ")"))
                   (when status-text (str ": " status-text)))]
-     {:db (-> db
-              (update-in [:todos :pending] disj id)
-              (assoc-in [:todos :error] msg))
-      :dispatch [::toast/enqueue-toast {:message msg :variant :error}]})))
+      (cond-> {:db (-> db
+                       (update-in [:todos :pending] disj id)
+                       (assoc-in [:todos :error] msg))}
+        (unauthorized? status) (assoc :dispatch [:acme.web.feature.auth.events/session-expired nil])
+        (not (unauthorized? status))
+        (assoc :dispatch [::toast/enqueue-toast {:message msg :variant :error}])))))

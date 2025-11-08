@@ -2,13 +2,16 @@
   (:gen-class)
   (:require
    [clojure.string :as cstr]
+   [acme.server.handlers.auth :as auth-handler]
    [acme.server.handlers.health :as health]
    [acme.server.handlers.todos :as todos]
    [acme.server.handlers.users :as users]
+   [acme.server.schemas.auth :as auth.schema]
    [acme.server.schemas.todo :as todo.schema]
    [acme.server.schemas.user :as user.schema]
    [acme.server.http :as http]
-   [acme.server.middleware.logging :refer [wrap-request-logging]]
+   [acme.server.middleware.auth :as auth-middleware]
+   [acme.server.middleware.logging :as logging :refer [wrap-request-logging]]
    [integrant.core :as ig]
    [reitit.ring :as ring]
    [reitit.coercion.malli :as malli-coercion]
@@ -53,8 +56,18 @@
            :handler #'health/health-response
            :responses {200 {:body [:map [:status [:enum "ok" "error"]]]}}}}]
 
+   ["/api/auth/login"
+    {:post {:summary "Authenticate and issue a JWT"
+            :tags ["Auth"]
+            :handler #'auth-handler/login-response
+            :parameters {:body auth.schema/login-body}
+            :responses {200 {:body auth.schema/login-response}
+                        400 {:body [:map [:error :string]]}
+                        401 {:body [:map [:error :string]]}}}}]
+
    ["/api/todo"
-    {:get {:summary "List todos"
+    {:middleware [auth-middleware/wrap-require-identity]
+     :get {:summary "List todos"
            :tags ["Todos"]
            :handler #'todos/list-response
            :responses {200 {:body todo.schema/todo-list-response}}}
@@ -65,7 +78,8 @@
             :responses {201 {:body todo.schema/todo-response}}}}]
 
    ["/api/todo/:id"
-    {:parameters {:path todo.schema/id-path}
+    {:middleware [auth-middleware/wrap-require-identity]
+     :parameters {:path todo.schema/id-path}
      :get {:summary "Fetch todo"
            :tags ["Todos"]
            :handler #'todos/fetch-response
@@ -91,8 +105,10 @@
               :responses {200 {:body [:map [:status :string]]}
                           404 {:body [:map [:error :string]]}}}}]
 
-   ["/api/users"
-    {:get {:summary "List users"
+  ["/api/users"
+    {:middleware [auth-middleware/wrap-require-identity
+                  auth-middleware/wrap-require-admin]
+     :get {:summary "List users"
            :tags ["Users"]
            :handler #'users/users-response
            :responses {200 {:body user.schema/user-list-response}}}
@@ -104,8 +120,10 @@
                         400 {:body [:map [:error :string]]}
                         409 {:body [:map [:error :string]]}}}}]
 
-   ["/api/users/:uuid"
-    {:parameters {:path user.schema/uuid-path}
+  ["/api/users/:uuid"
+    {:middleware [auth-middleware/wrap-require-identity
+                  auth-middleware/wrap-require-admin]
+     :parameters {:path user.schema/uuid-path}
      :put {:summary "Replace user"
            :tags ["Users"]
            :handler #'users/update-user-response
@@ -145,6 +163,8 @@
                         muuntaja/format-negotiate-middleware
                         muuntaja/format-response-middleware
                         muuntaja/format-request-middleware
+                        auth-middleware/wrap-authentication
+                        logging/wrap-log-response-shape
                         ring-coercion/coerce-response-middleware
                         ring-coercion/coerce-request-middleware
                         ring-coercion/coerce-exceptions-middleware]}}))

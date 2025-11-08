@@ -7,22 +7,32 @@
 
 (def default-db
   {:isLoggedIn? false
+   :user nil
+   :auth {:token nil
+          :expires-at nil
+          :logging-in? false
+          :error nil}
    :users []
    :loading? false
    :error nil
    :add-user {:visible? false
               :name ""
               :age "0"
+              :email ""
+              :password ""
               :submitting? false
               :errors {}}
    :edit-user {:visible? false
                :uuid nil
                :name ""
                :age "0"
+               :email ""
+               :password ""
                :submitting? false
                :errors {}
                :initial {:name ""
-                         :age 0}}
+                         :age 0
+                         :email ""}}
    :pending-deletes #{}
    :todos {:items []
            :loading? false

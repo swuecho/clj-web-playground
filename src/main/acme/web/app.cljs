@@ -1,6 +1,7 @@
 (ns acme.web.app
   (:require
    [acme.web.feature.app.events :as app-events]
+   [acme.web.feature.auth.events :as auth-events]
    [acme.web.feature.toast.events]
    [acme.web.feature.toast.subs]
    [acme.web.feature.todos.subs]
@@ -20,6 +21,7 @@
 
 (defn init []
   (rf/dispatch-sync [::app-events/initialize])
+  (rf/dispatch-sync [::auth-events/restore-session])
   (mount-root))
 
 (defn ^:dev/after-load reload! []

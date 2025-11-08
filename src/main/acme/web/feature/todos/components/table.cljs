@@ -17,6 +17,21 @@
      [:span {:class "h-2 w-2 rounded-full bg-amber-400"}]
      "Pending"]))
 
+(defn- owner-pill [owner-id current-user-id]
+  (let [value (some-> owner-id str)
+        same-user? (and value current-user-id (= value current-user-id))
+        label (cond
+                same-user? "You"
+                value (if (> (count value) 10)
+                        (str (subs value 0 10) "…")
+                        value)
+                :else "Unknown")
+        base-class "inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold"
+        palette (if same-user?
+                  " border-primary/40 text-primary"
+                  " border-base-300 text-base-content/70")]
+    [:span {:class (str base-class palette)} label]))
+
 (defn- sortable-title [{:keys [field direction dispatch-sort]} label target-field]
   (let [active? (= target-field field)
         next-direction (if active?
@@ -44,77 +59,96 @@
 (defn- header-props [additional-class]
   (clj->js {:className (str header-base-class " " additional-class)}))
 
-(defn build-columns [{:keys [field direction dispatch-sort]}]
+(defn build-columns [{:keys [field direction dispatch-sort show-owner? current-user-id]}]
   (let [config {:field field
                 :direction direction
                 :dispatch-sort dispatch-sort}
-        cell-class #(str cell-base-class " " %)]
-    (clj->js
-     [{:title (r/as-element
-               [:div {:class "flex items-center"}
-                [:span {:class "text-[11px] font-semibold uppercase tracking-wide text-base-content/70"}
-                 "ID"]])
-       :dataIndex "id"
-       :key "id"
-       :align "left"
-       :width 90
-       :className (cell-class "font-medium text-base-content/80 font-mono text-xs")
-       :onHeaderCell (fn [_ _] (header-props "text-left"))
-       :render (fn [id _record _index]
-                 (r/as-element [:span {:class "font-mono text-xs text-base-content/80"} id]))}
-      {:title (r/as-element
-               [:div {:class "flex items-center"}
-                [:span {:class "text-[11px] font-semibold uppercase tracking-wide text-base-content/70"}
-                 "Title"]])
-       :dataIndex "title"
-       :key "title"
-       :align "left"
-       :className (cell-class "text-base-content")
-       :onHeaderCell (fn [_ _] (header-props "text-left"))
-       :render (fn [title _record _index]
-                 (r/as-element [:span {:class "text-base-content"} (or title "-")]))}
-      {:title (sortable-title config "Completed" :completed)
-       :dataIndex "completed"
-       :key "completed"
-       :align "center"
-       :width 150
-       :className (cell-class "text-center")
-       :onHeaderCell (fn [_ _] (header-props "text-center"))
-       :render (fn [completed _record _index]
-                 (r/as-element [status-pill completed]))}
-      {:title (sortable-title config "Created" :created_at)
-       :dataIndex "created_at"
-       :key "created_at"
-       :align "left"
-       :width 210
-       :className (cell-class "font-mono text-xs text-base-content/80")
-       :onHeaderCell (fn [_ _] (header-props "text-left"))
-       :render (fn [created-at _record _index]
-                 (r/as-element [:span {:class "font-mono text-xs text-base-content/80"}
-                                (or created-at "-")]))}
-      {:title (sortable-title config "Updated" :updated_at)
-       :dataIndex "updated_at"
-       :key "updated_at"
-       :align "left"
-       :width 210
-       :className (cell-class "font-mono text-xs text-base-content/80")
-       :onHeaderCell (fn [_ _] (header-props "text-left"))
-       :render (fn [updated-at _record _index]
-                 (r/as-element [:span {:class "font-mono text-xs text-base-content/80"}
-                                (or updated-at "-")]))}
-      {:title (r/as-element
-               [:div {:class "flex justify-end"}
-                [:span {:class "text-[11px] font-semibold uppercase tracking-wide text-base-content/70"}
-                 "Actions"]])
-       :key "actions"
-       :align "right"
-       :width 180
-       :className (cell-class "text-right")
-       :onHeaderCell (fn [_ _] (header-props "text-right"))
-       :render (fn [_ record _index]
-                 (let [todo (js->clj record :keywordize-keys true)]
-                   (r/as-element [:div {:class "flex justify-end"}
-                                   [todo-row-actions (:id todo)]])))}])))
+        cell-class #(str cell-base-class " " %)
+        id-column {:title (r/as-element
+                           [:div {:class "flex items-center"}
+                            [:span {:class "text-[11px] font-semibold uppercase tracking-wide text-base-content/70"}
+                             "ID"]])
+                   :dataIndex "id"
+                   :key "id"
+                   :align "left"
+                   :width 90
+                   :className (cell-class "font-medium text-base-content/80 font-mono text-xs")
+                   :onHeaderCell (fn [_ _] (header-props "text-left"))
+                   :render (fn [id _record _index]
+                             (r/as-element [:span {:class "font-mono text-xs text-base-content/80"} id]))}
+        title-column {:title (r/as-element
+                              [:div {:class "flex items-center"}
+                               [:span {:class "text-[11px] font-semibold uppercase tracking-wide text-base-content/70"}
+                                "Title"]])
+                      :dataIndex "title"
+                      :key "title"
+                      :align "left"
+                      :className (cell-class "text-base-content")
+                      :onHeaderCell (fn [_ _] (header-props "text-left"))
+                      :render (fn [title _record _index]
+                                (r/as-element [:span {:class "text-base-content"} (or title "-")]))}
+        owner-column {:title (r/as-element
+                              [:div {:class "flex items-center"}
+                               [:span {:class "text-[11px] font-semibold uppercase tracking-wide text-base-content/70"}
+                                "Owner"]])
+                      :dataIndex "user_id"
+                      :key "user_id"
+                      :align "left"
+                      :width 190
+                      :className (cell-class "text-base-content")
+                      :onHeaderCell (fn [_ _] (header-props "text-left"))
+                      :render (fn [owner-id _record _index]
+                                (r/as-element [owner-pill owner-id current-user-id]))}
+        completed-column {:title (sortable-title config "Completed" :completed)
+                          :dataIndex "completed"
+                          :key "completed"
+                          :align "center"
+                          :width 150
+                          :className (cell-class "text-center")
+                          :onHeaderCell (fn [_ _] (header-props "text-center"))
+                          :render (fn [completed _record _index]
+                                    (r/as-element [status-pill completed]))}
+        created-column {:title (sortable-title config "Created" :created_at)
+                         :dataIndex "created_at"
+                         :key "created_at"
+                         :align "left"
+                         :width 210
+                         :className (cell-class "font-mono text-xs text-base-content/80")
+                         :onHeaderCell (fn [_ _] (header-props "text-left"))
+                         :render (fn [created-at _record _index]
+                                   (r/as-element [:span {:class "font-mono text-xs text-base-content/80"}
+                                                  (or created-at "-")]))}
+        updated-column {:title (sortable-title config "Updated" :updated_at)
+                         :dataIndex "updated_at"
+                         :key "updated_at"
+                         :align "left"
+                         :width 210
+                         :className (cell-class "font-mono text-xs text-base-content/80")
+                         :onHeaderCell (fn [_ _] (header-props "text-left"))
+                         :render (fn [updated-at _record _index]
+                                   (r/as-element [:span {:class "font-mono text-xs text-base-content/80"}
+                                                  (or updated-at "-")]))}
+        actions-column {:title (r/as-element
+                                 [:div {:class "flex justify-end"}
+                                  [:span {:class "text-[11px] font-semibold uppercase tracking-wide text-base-content/70"}
+                                   "Actions"]])
+                         :key "actions"
+                         :align "right"
+                         :width 180
+                         :className (cell-class "text-right")
+                         :onHeaderCell (fn [_ _] (header-props "text-right"))
+                         :render (fn [_ record _index]
+                                   (let [todo (js->clj record :keywordize-keys true)]
+                                     (r/as-element [:div {:class "flex justify-end"}
+                                                    [todo-row-actions (:id todo)]])))}
+        columns (cond-> [id-column
+                         title-column]
+                  show-owner? (conj owner-column)
+                  true (into [completed-column
+                              created-column
+                              updated-column
+                              actions-column]))]
+    (clj->js columns)))
 
 (defn format-rows [todos]
   (->> todos

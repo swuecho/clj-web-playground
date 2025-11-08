@@ -33,6 +33,20 @@
 (def sidebar-nav-map
   (into {} (map (juxt :id identity) sidebar-nav-items)))
 
+(defn nav-map
+  ([items]
+   (into {} (map (juxt :id identity) items)))
+  ([] sidebar-nav-map))
+
+(defn nav-items-for-role [role]
+  (let [items (if (= "admin" role)
+                sidebar-nav-items
+                (remove #(= :users (:id %)) sidebar-nav-items))]
+    (vec items)))
+
+(defn nav-map-for-role [role]
+  (nav-map (nav-items-for-role role)))
+
 (defn- nav-button
   [{:keys [id label description icon icon-text accent disabled?]} active-id on-select collapsed?]
   (let [active? (= id active-id)
@@ -113,11 +127,12 @@
         (or email-block [:span {:class "text-sm font-semibold text-base-content/40"} "No user"])
         [collapse-toggle-button collapsed? toggle!]]])))
 
-(defn sidebar [{:keys [active-id on-select user-email]}]
+(defn sidebar [{:keys [active-id on-select user-email nav-items]}]
   (r/with-let [collapsed? (r/atom false)]
-    (fn [{:keys [active-id on-select user-email]}]
+    (fn [{:keys [active-id on-select user-email nav-items]}]
       (let [collapsed @collapsed?
-            toggle! #(swap! collapsed? not)]
+            toggle! #(swap! collapsed? not)
+            nav-items (or nav-items sidebar-nav-items)]
         [:aside {:class (str "w-full shrink-0 border-b border-base-200 bg-base-100/95 transition-all duration-200 ease-in-out "
                              (if collapsed
                                "md:w-20"
@@ -137,7 +152,7 @@
                              (if collapsed
                                "w-full"
                                "overflow-y-auto"))}
-           (for [item sidebar-nav-items]
+           (for [item nav-items]
              ^{:key (:id item)}
              [nav-button item active-id on-select collapsed])]
           [sidebar-footer collapsed toggle! user-email]]]))))

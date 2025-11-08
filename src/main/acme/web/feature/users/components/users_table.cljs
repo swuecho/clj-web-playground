@@ -43,14 +43,18 @@
                                  [:tr {:class "bg-base-200 text-sm uppercase tracking-wide text-base-content/70"}
                                   [:th {:class "font-semibold"} "UUID"]
                                   [:th {:class "font-semibold"} "Name"]
+                                  [:th {:class "font-semibold"} "Email"]
+                                  [:th {:class "font-semibold"} "Role"]
                                   [:th {:class "font-semibold"} "Age"]
                                   [:th {:class "font-semibold text-right"} "Actions"]]]
                                 [:tbody
-                                 (for [{:keys [uuid name age]} @users]
+                                 (for [{:keys [uuid name age email role]} @users]
                                    ^{:key uuid}
                                    [:tr
                                     [:td {:class "font-mono text-sm align-middle"} uuid]
                                     [:td {:class "align-middle"} name]
+                                    [:td {:class "align-middle"} email]
+                                    [:td {:class "align-middle capitalize"} (or role "user")]
                                     [:td {:class "align-middle"} age]
                                     [:td {:class "align-middle text-right"}
                                      [user-row-actions uuid]]])]]]])
