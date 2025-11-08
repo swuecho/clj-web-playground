@@ -8,12 +8,13 @@
 
 (defn- fetch-user-by-email [email]
   (when-let [normalized (user.validation/normalize-email email)]
-    (db/query-one
-     ["select uuid::text as uuid,
-              \"name\" as name,
-              age as age,
-              email,
-              password_hash
+      (db/query-one
+       ["select uuid::text as uuid,
+                \"name\" as name,
+                age as age,
+                 email,
+                 role,
+                 password_hash
         from \"UserTable\"
         where lower(email) = ?
         limit 1"

@@ -27,6 +27,9 @@
    [:fn {:error/message (str "must be at least " password-min-length " characters")}
     #(>= (count %) password-min-length)]])
 
+(def role-schema
+  [:enum "admin" "user"])
+
 (def email-schema
   [:and
    non-blank-string
@@ -57,7 +60,8 @@
    [:uuid non-blank-string]
    [:name non-blank-string]
    [:age [:int {:min 0}]]
-   [:email email-schema]])
+   [:email email-schema]
+   [:role role-schema]])
 
 (def user-list-response
   [:sequential user-response])

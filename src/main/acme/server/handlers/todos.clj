@@ -4,23 +4,25 @@
    [acme.server.http :as http]
    [acme.server.services.todo :as todo.service]))
 
-(defn list-response [_]
-  (http/respond-json (todo.service/list-todos)))
+(defn list-response [{:keys [identity]}]
+  (http/respond-json (todo.service/list-todos identity)))
 
-(defn create-response [{:keys [parameters]}]
+(defn create-response [{:keys [identity parameters]}]
   (let [{:keys [title completed]} (:body parameters)
         title (some-> title str/trim)
         payload (cond-> {:title title}
                   (some? completed) (assoc :completed completed))]
-    (http/respond-json (todo.service/create-todo! payload) 201)))
+    (if-let [created (todo.service/create-todo! identity payload)]
+      (http/respond-json created 201)
+      (http/respond-json {:error "Unable to determine current user"} 403))))
 
-(defn fetch-response [{:keys [parameters]}]
+(defn fetch-response [{:keys [identity parameters]}]
   (let [id (get-in parameters [:path :id])]
-    (if-let [record (todo.service/fetch-todo id)]
+    (if-let [record (todo.service/fetch-todo identity id)]
       (http/respond-json record)
       (http/not-found nil))))
 
-(defn update-response [{:keys [parameters]}]
+(defn update-response [{:keys [identity parameters]}]
   (let [id (get-in parameters [:path :id])
         body (or (:body parameters) {})
         title (when (contains? body :title)
@@ -36,15 +38,15 @@
       (http/respond-json {:error "Title is required"} 400)
 
       :else
-      (if-let [record (todo.service/update-todo! id (cond-> {}
-                                                       (contains? body :title) (assoc :title title)
-                                                       (contains? body :completed) (assoc :completed completed)))]
+      (if-let [record (todo.service/update-todo! identity id (cond-> {}
+                                                               (contains? body :title) (assoc :title title)
+                                                               (contains? body :completed) (assoc :completed completed)))]
         (http/respond-json record)
         (http/not-found nil)))))
 
-(defn delete-response [{:keys [parameters]}]
+(defn delete-response [{:keys [identity parameters]}]
   (let [id (get-in parameters [:path :id])
-        deleted (todo.service/delete-todo! id)]
+        deleted (todo.service/delete-todo! identity id)]
     (if (pos? deleted)
       (http/respond-json {:status "deleted"})
       (http/not-found nil))))

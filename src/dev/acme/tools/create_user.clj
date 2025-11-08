@@ -9,14 +9,15 @@
    (java.util UUID)))
 
 (defn- usage []
-  (println "Usage: clj -M:create-user --name NAME --email EMAIL --password PASSWORD [--age AGE] [--uuid UUID]")
+  (println "Usage: clj -M:create-user --name NAME --email EMAIL --password PASSWORD [--age AGE] [--uuid UUID] [--role ROLE]")
   (println)
   (println "Options:")
   (println "  --name       Required. Full name for the user.")
   (println "  --email      Required. Unique email address.")
   (println "  --password   Required. Plain text password to hash before storing.")
   (println "  --age        Optional. Non-negative integer (default 0).")
-  (println "  --uuid       Optional. Supply to control the uuid; otherwise generated."))
+  (println "  --uuid       Optional. Supply to control the uuid; otherwise generated.")
+  (println "  --role       Optional. Either 'admin' or 'user' (default 'user')."))
 
 (defn- parse-int [value]
   (try
@@ -30,7 +31,7 @@
       (let [[flag value & more] remaining]
         (cond
           (nil? flag) result
-          (and (#{"--name" "--email" "--password" "--age" "--uuid"} flag)
+          (and (#{"--name" "--email" "--password" "--age" "--uuid" "--role"} flag)
                (nil? value))
           (do
             (println "Missing value for" flag)
@@ -43,6 +44,7 @@
             "--password" (recur (assoc result :password value) more)
             "--age" (recur (assoc result :age value) more)
             "--uuid" (recur (assoc result :uuid value) more)
+            "--role" (recur (assoc result :role value) more)
             (do
               (println "Unknown option" flag)
               (usage)
@@ -95,25 +97,34 @@
       (catch Exception _
         (exit! 1 "--uuid must be a valid UUID")))))
 
-(defn- insert-user! [{:keys [uuid name age email password]}]
+(defn- ensure-role! [value]
+  (let [normalized (some-> value str str/lower-case str/trim)]
+    (cond
+      (or (nil? normalized) (str/blank? normalized)) "user"
+      (# {"admin" "user"} normalized) normalized
+      :else (exit! 1 "--role must be 'admin' or 'user'"))))
+
+(defn- insert-user! [{:keys [uuid name age email password role]}]
   (let [password-hash (auth/hash-password password)
-        row (db/query-one ["insert into \"UserTable\" (uuid, name, age, email, password_hash)
-                            values (?, ?, ?, ?, ?)
-                            returning uuid::text as uuid, \"name\" as name, age as age, email"
-                           uuid name age email password-hash])]
+        row (db/query-one ["insert into \"UserTable\" (uuid, name, age, email, password_hash, role)
+                            values (?, ?, ?, ?, ?, ?)
+                            returning uuid::text as uuid, \"name\" as name, age as age, email, role"
+                           uuid name age email password-hash role])]
     (println "Created user:" row)
     row))
 
 (defn -main [& args]
-  (let [{:keys [name email password age uuid]} (parse-args args)
+  (let [{:keys [name email password age uuid role]} (parse-args args)
         name (ensure-name! name)
         email (ensure-email! email)
         password (ensure-password! password)
         age (ensure-age! age)
-        uuid (ensure-uuid! uuid)]
+        uuid (ensure-uuid! uuid)
+        role (ensure-role! role)]
     (insert-user! {:uuid uuid
                    :name name
                    :age age
                    :email email
-                   :password password})
+                   :password password
+                   :role role})
     (System/exit 0)))

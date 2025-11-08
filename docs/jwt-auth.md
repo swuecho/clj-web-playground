@@ -1,6 +1,6 @@
 # JWT Authentication & User Table
 
-The backend now protects every `/api/todo` and `/api/users` endpoint with bearer tokens. Tokens are short-lived JWTs signed with an HMAC secret and carry the user UUID/email in their claims. Use the `/api/auth/login` endpoint to obtain a token, then supply it on subsequent requests with the `Authorization: Bearer <token>` header.
+The backend now protects every `/api/todo` and `/api/users` endpoint with bearer tokens. Tokens are short-lived JWTs signed with an HMAC secret and carry the user UUID/email/role in their claims. Use the `/api/auth/login` endpoint to obtain a token, then supply it on subsequent requests with the `Authorization: Bearer <token>` header.
 
 ## Database changes
 
@@ -13,6 +13,7 @@ The backend now protects every `/api/todo` and `/api/users` endpoint with bearer
 | `age`          | `integer`           | Required, must be ≥ 0.                 |
 | `email`        | `varchar(255)`      | Required, stored in lowercase, unique. |
 | `password_hash`| `text`              | Required, BCrypt hash created by the API. |
+| `role`         | `text`              | Required, either `user` (default) or `admin`. |
 | `created_at`   | `timestamptz`       | Optional convenience timestamp.        |
 | `updated_at`   | `timestamptz`       | Optional convenience timestamp.        |
 
@@ -21,6 +22,7 @@ If you already had the table in place, apply a migration similar to:
 ```sql
 alter table "UserTable" add column if not exists email varchar(255);
 alter table "UserTable" add column if not exists password_hash text;
+alter table "UserTable" add column if not exists role text not null default 'user';
 -- Optional but recommended
 alter table "UserTable" add column if not exists created_at timestamptz not null default now();
 alter table "UserTable" add column if not exists updated_at timestamptz not null default now();
@@ -34,6 +36,10 @@ After adding the columns, backfill every row with a unique email and hashed pass
 update "UserTable"
 set email = lower(uuid::text) || '@example.local'
 where email is null;
+
+update "UserTable"
+set role = 'user'
+where role is null;
 ```
 
 Generate password hashes with the same helper the API uses:
@@ -52,7 +58,8 @@ When every row has both fields populated, lock them down:
 ```sql
 alter table "UserTable"
   alter column email set not null,
-  alter column password_hash set not null;
+  alter column password_hash set not null,
+  alter column role set not null;
 ```
 
 ## Environment variables

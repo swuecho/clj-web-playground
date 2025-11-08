@@ -40,13 +40,14 @@
    (when (and (seq (str password)) (seq (str password-hash)))
      (hashers/check password password-hash))))
 
-(defn issue-token [{:keys [uuid email name]}]
+(defn issue-token [{:keys [uuid email name role]}]
   (let [now (Instant/now)
         ttl (token-ttl-seconds)
         exp (.plusSeconds now ttl)
         claims {:sub uuid
                 :email email
                 :name name
+                :role role
                 :iss issuer
                 :iat (.getEpochSecond now)
                 :exp (.getEpochSecond exp)}

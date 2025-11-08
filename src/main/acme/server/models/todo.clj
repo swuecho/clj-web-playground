@@ -14,17 +14,30 @@
   :default)
 
 (t2/define-default-fields model
-  [:id :title :completed :created_at :updated_at])
+  [:id :title :completed :user_id :created_at :updated_at])
+
+(def default-order-by [[:id :asc]])
 
 (defn all []
-  (t2/select model {:order-by [[:id :asc]]}))
+  (t2/select model {:order-by default-order-by}))
+
+(defn all-by-user [user-id]
+  (when user-id
+    (t2/select model {:order-by default-order-by
+                      :where [:= :user_id user-id]})))
 
 (defn fetch [id]
   (when id
     (t2/select-one model :toucan/pk id)))
 
-(defn create! [{:keys [title completed] :as attrs}]
-  (let [payload (merge {:title title}
+(defn fetch-for-user [user-id id]
+  (when (and user-id id)
+    (t2/select-one model {:where [:and [:= :id id]
+                                  [:= :user_id user-id]]})))
+
+(defn create! [{:keys [title completed user_id] :as attrs}]
+  (let [payload (merge {:title title
+                        :user_id user_id}
                        (when (some? completed)
                          {:completed (boolean completed)}))]
     (t2/insert-returning-instance! model payload)))

@@ -4,6 +4,9 @@
    [acme.server.auth :as auth]
    [acme.server.http :as http]))
 
+(defn admin? [identity]
+  (= "admin" (:role identity)))
+
 (defn- bearer-token [{:keys [headers]}]
   (when-let [raw (get headers "authorization")]
     (let [value (str/trim raw)
@@ -24,3 +27,16 @@
     (if (:identity request)
       (handler request)
       (http/respond-json {:error "Unauthorized"} 401))))
+
+(defn wrap-require-admin [handler]
+  (fn [request]
+    (let [identity (:identity request)]
+      (cond
+        (nil? identity)
+        (http/respond-json {:error "Unauthorized"} 401)
+
+        (admin? identity)
+        (handler request)
+
+        :else
+        (http/respond-json {:error "Forbidden"} 403)))))

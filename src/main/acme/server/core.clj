@@ -105,8 +105,9 @@
               :responses {200 {:body [:map [:status :string]]}
                           404 {:body [:map [:error :string]]}}}}]
 
-   ["/api/users"
-    {:middleware [auth-middleware/wrap-require-identity]
+  ["/api/users"
+    {:middleware [auth-middleware/wrap-require-identity
+                  auth-middleware/wrap-require-admin]
      :get {:summary "List users"
            :tags ["Users"]
            :handler #'users/users-response
@@ -119,8 +120,9 @@
                         400 {:body [:map [:error :string]]}
                         409 {:body [:map [:error :string]]}}}}]
 
-   ["/api/users/:uuid"
-    {:middleware [auth-middleware/wrap-require-identity]
+  ["/api/users/:uuid"
+    {:middleware [auth-middleware/wrap-require-identity
+                  auth-middleware/wrap-require-admin]
      :parameters {:path user.schema/uuid-path}
      :put {:summary "Replace user"
            :tags ["Users"]
