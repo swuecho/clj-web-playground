@@ -242,7 +242,7 @@
                       (http/respond-json updated status)
                       (http/not-found nil)))
                   (catch SQLException ex
-                    (throw ex))))))))))
+                    (throw ex)))))))))))
 
 (defn delete-user-response [{:keys [parameters path-params]}]
   (let [uuid (or (get-in parameters [:path :uuid]) (:uuid path-params))
@@ -260,4 +260,4 @@
                       (db/query-one ["delete from \"UserTable\" where uuid = ? returning uuid::text as uuid, \"name\" as name, age as age, email, role" uuid-param]))]
         (if deleted
           (http/respond-json deleted)
-          (http/not-found nil)))))))
+          (http/not-found nil))))))
