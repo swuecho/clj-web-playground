@@ -9,6 +9,11 @@
    (java.util Base64 UUID)))
 
 (def default-refresh-ttl-days 30)
+(def cookie-name "acme-refresh")
+(def ^:private truthy-values #{"1" "true" "yes" "on"})
+
+(defn- truthy? [value]
+  (boolean (some-> value str/lower-case truthy-values)))
 
 (defn- parse-positive-long [value]
   (try
@@ -22,6 +27,21 @@
       (let [days (or (some-> (System/getenv "ACME_REFRESH_TTL_DAYS") parse-positive-long)
                      default-refresh-ttl-days)]
         (* days 86400))))
+
+(defn- cookie-same-site []
+  (case (some-> (System/getenv "ACME_REFRESH_COOKIE_SAMESITE") str/lower-case)
+    "strict" :strict
+    "none" :none
+    :lax))
+
+(defn- cookie-secure? []
+  (truthy? (System/getenv "ACME_REFRESH_COOKIE_SECURE")))
+
+(defn cookie-config []
+  {:path "/"
+   :http-only true
+   :same-site (cookie-same-site)
+   :secure (cookie-secure?)})
 
 (def ^SecureRandom secure-random (SecureRandom.))
 
@@ -43,7 +63,7 @@
 (defn- expires-at []
   (instant->sql (.plusSeconds (now) (refresh-ttl-seconds))))
 
-(defn- parse-token [value]
+(defn parse-token [value]
   (when (and (string? value) (str/includes? value "."))
     (let [[token-id secret] (str/split value #"\." 2)]
       (when (and (seq token-id) (seq secret))
@@ -119,13 +139,18 @@
                :refresh refresh-result})))))))
 
 (defn revoke-token!
-  [token-id user-uuid]
-  (when-let [id (->uuid token-id)]
-    (when-let [user (->uuid user-uuid)]
-      (db/query-one ["update \"RefreshToken\"
-                     set revoked_at = now()
-                     where id = ? and user_uuid = ? and revoked_at is null
-                     returning id::text as id" id user]))))
+  ([token-id]
+   (revoke-token! token-id nil))
+  ([token-id user-uuid]
+   (when-let [id (->uuid token-id)]
+     (let [base ["update \"RefreshToken\" set revoked_at = now() where id = ? and revoked_at is null returning id::text as id" id]
+           statement (if-let [user (some-> user-uuid ->uuid)]
+                       ["update \"RefreshToken\"
+                         set revoked_at = now()
+                         where id = ? and user_uuid = ? and revoked_at is null
+                         returning id::text as id" id user]
+                       base)]
+       (db/query-one statement)))))
 
 (defn list-tokens-for-user [user-uuid]
   (when-let [uuid (->uuid user-uuid)]
@@ -143,3 +168,14 @@
          (map serialize-row)
          (remove nil?)
          vec)))
+
+(defn build-refresh-cookie [refresh]
+  (when-let [token (:token refresh)]
+    (assoc (cookie-config)
+           :value token
+           :max-age (refresh-ttl-seconds))))
+
+(defn clear-refresh-cookie []
+  (assoc (cookie-config)
+         :value ""
+         :max-age 0))

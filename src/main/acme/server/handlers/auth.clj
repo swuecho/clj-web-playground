@@ -44,6 +44,11 @@
       limit 1"
       id])))
 
+(defn- attach-refresh-cookie [response refresh]
+  (if-let [cookie (refresh-tokens/build-refresh-cookie refresh)]
+    (assoc response :cookies {refresh-tokens/cookie-name cookie})
+    response))
+
 (defn- session-payload
   ([user]
    (session-payload user nil))
@@ -53,14 +58,16 @@
          sanitized (dissoc user :password_hash)
          refresh-info (or refresh (refresh-tokens/issue-token-for-user! (:uuid sanitized)))]
      (if (and refresh-info (:token refresh-info))
-       (http/respond-json {:access_token token
-                           :token_type token-type
-                           :expires_at expires-at
-                           :expires_in expires-in
-                           :refresh_token (:token refresh-info)
-                           :refresh_expires_at (get-in refresh-info [:record :expires_at])
-                           :user sanitized})
+       (-> (http/respond-json {:access_token token
+                               :token_type token-type
+                               :expires_at expires-at
+                               :expires_in expires-in
+                               :user sanitized})
+           (attach-refresh-cookie refresh-info))
        (http/respond-json {:error "Unable to issue refresh token"} 500)))))
+
+(defn- refresh-cookie-value [{:keys [cookies]}]
+  (get-in cookies [refresh-tokens/cookie-name :value]))
 
 (defn login-response [{:keys [parameters body-params]}]
   (let [body (or (:body parameters) body-params {})
@@ -104,20 +111,16 @@
     (user-handlers/add-user-response {:parameters {:body sanitized}
                                       :body-params sanitized})))
 
-(defn refresh-response [{:keys [parameters body-params]}]
-  (let [body (or (:body parameters) body-params {})
-        token (:refresh_token body)
-        trimmed (some-> token str str/trim)]
-    (cond
-      (str/blank? trimmed)
-      (http/respond-json {:error "Refresh token is required"} 400)
-
-      :else
-      (if-let [{:keys [user-uuid refresh]} (refresh-tokens/rotate-token! trimmed)]
+(defn refresh-response [request]
+  (let [token (some-> (refresh-cookie-value request) str str/trim)]
+    (if (str/blank? token)
+      (http/respond-json {:error "Refresh token is missing"} 401)
+      (if-let [{:keys [user-uuid refresh]} (refresh-tokens/rotate-token! token)]
         (if-let [user (fetch-user-by-uuid user-uuid)]
           (session-payload user refresh)
           (http/respond-json {:error "Account not found"} 404))
-        (http/respond-json {:error "Refresh token is invalid or expired"} 401)))))
+        (-> (http/respond-json {:error "Refresh token is invalid or expired"} 401)
+            (assoc :cookies {refresh-tokens/cookie-name (refresh-tokens/clear-refresh-cookie)}))))))
 
 (defn list-refresh-tokens-response [{:keys [parameters path-params]}]
   (let [uuid (or (get-in parameters [:path :uuid]) (:uuid path-params))
@@ -151,3 +154,11 @@
       (if (refresh-tokens/revoke-token! trimmed-token trimmed-uuid)
         (http/respond-json {:status "revoked"})
         (http/respond-json {:error "Refresh token not found"} 404)))))
+
+(defn logout-response [request]
+  (let [token (refresh-cookie-value request)]
+    (when (seq token)
+      (when-let [{:keys [id]} (refresh-tokens/parse-token token)]
+        (refresh-tokens/revoke-token! id)))
+    (-> (http/respond-json {:status "signed-out"})
+        (assoc :cookies {refresh-tokens/cookie-name (refresh-tokens/clear-refresh-cookie)}))))

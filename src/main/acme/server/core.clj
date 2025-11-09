@@ -70,9 +70,7 @@
    {:post {:summary "Exchange refresh token for a new session"
            :tags ["Auth"]
            :handler #'auth-handler/refresh-response
-           :parameters {:body auth.schema/refresh-body}
            :responses {200 {:body auth.schema/refresh-response}
-                       400 {:body [:map [:error :string]]}
                        401 {:body [:map [:error :string]]}
                        404 {:body [:map [:error :string]]}}}}]
 
@@ -84,6 +82,12 @@
            :responses {201 {:body user.schema/user-response}
                        400 {:body [:map [:error :string]]}
                        409 {:body [:map [:error :string]]}}}}]
+
+  ["/api/auth/logout"
+   {:post {:summary "Revoke refresh token cookie"
+           :tags ["Auth"]
+           :handler #'auth-handler/logout-response
+           :responses {200 {:body auth.schema/logout-response}}}}]
 
    ["/api/todo"
     {:middleware [auth-middleware/wrap-require-identity]

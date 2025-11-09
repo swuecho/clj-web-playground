@@ -20,23 +20,9 @@
   {:submitting? false
    :error nil})
 
-(defn- expired? [iso]
-  (try
-    (if (seq iso)
-      (let [expires (.getTime (js/Date. iso))
-            now (.now js/Date.)]
-        (<= expires now))
-      false)
-    (catch :default _
-      true)))
-
 (defn- refresh-available? [db]
-  (let [token (get-in db [:auth :refresh-token])
-        expires (get-in db [:auth :refresh-expires-at])]
-    (and (string? token)
-         (not (str/blank? token))
-         (not (expired? expires))
-         (not (get-in db [:auth :refreshing?])))))
+  (and (get-in db [:auth :has-refresh?])
+       (not (get-in db [:auth :refreshing?]))))
 
 (defn- reset-auth [db]
   (-> db
@@ -44,22 +30,20 @@
       (assoc :user nil)
       (assoc-in [:auth :token] nil)
       (assoc-in [:auth :expires-at] nil)
-      (assoc-in [:auth :refresh-token] nil)
-      (assoc-in [:auth :refresh-expires-at] nil)
+      (assoc-in [:auth :has-refresh?] false)
       (assoc-in [:auth :logging-in?] false)
       (assoc-in [:auth :refreshing?] false)
       (assoc-in [:auth :error] nil)
       (assoc-in [:auth :mode] :login)
       (assoc-in [:auth :register] default-register-state)))
 
-(defn- hydrate-auth [db {:keys [token expires-at refresh-token refresh-expires-at user]}]
+(defn- hydrate-auth [db {:keys [token expires-at has-refresh? user]}]
   (-> db
       (assoc :isLoggedIn? (boolean token))
       (assoc :user user)
       (assoc-in [:auth :token] token)
       (assoc-in [:auth :expires-at] expires-at)
-      (assoc-in [:auth :refresh-token] refresh-token)
-      (assoc-in [:auth :refresh-expires-at] refresh-expires-at)
+      (assoc-in [:auth :has-refresh?] (true? has-refresh?))
       (assoc-in [:auth :logging-in?] false)
       (assoc-in [:auth :refreshing?] false)
       (assoc-in [:auth :error] nil)
@@ -105,6 +89,7 @@
                      :headers {"Accept" "application/json"}
                      :params {:email normalized-email
                               :password trimmed-password}
+                     :with-credentials? true
                      :format (ajax/json-request-format)
                      :response-format (ajax/json-response-format {:keywords? true})
                      :on-success [::login-success]
@@ -112,7 +97,7 @@
 
 (rf/reg-event-fx
  ::login-success
- (fn [{:keys [db]} [_ {:keys [access_token expires_at refresh_token refresh_expires_at user]}]]
+ (fn [{:keys [db]} [_ {:keys [access_token expires_at user]}]]
    (let [admin? (admin-user? user)
          welcome (str "Welcome back, " (or (:name user) (:email user)))
          dispatches (cond-> []
@@ -125,16 +110,14 @@
               (assoc :user user)
               (assoc-in [:auth :token] access_token)
               (assoc-in [:auth :expires-at] expires_at)
-              (assoc-in [:auth :refresh-token] refresh_token)
-              (assoc-in [:auth :refresh-expires-at] refresh_expires_at)
+              (assoc-in [:auth :has-refresh?] true)
               (assoc-in [:auth :logging-in?] false)
               (assoc-in [:auth :refreshing?] false)
               (assoc-in [:auth :error] nil))
       :dispatch-n dispatches
       ::persist-auth {:token access_token
                       :expires-at expires_at
-                      :refresh-token refresh_token
-                      :refresh-expires-at refresh_expires_at
+                      :has-refresh? true
                       :user user}})))
 
 (rf/reg-event-fx
@@ -234,28 +217,24 @@
 (rf/reg-event-fx
  ::attempt-refresh
  (fn [{:keys [db]} _]
-   (let [refresh-token (get-in db [:auth :refresh-token])
-         expires-at (get-in db [:auth :refresh-expires-at])]
-     (if (or (str/blank? refresh-token)
-             (expired? expires-at))
-       {:dispatch [::logout {:reason "Session expired. Please sign in again"
-                             :silent? false}]}
-       {:db (-> db
-                (assoc-in [:auth :refreshing?] true)
-                (assoc-in [:auth :error] nil))
-        :http-xhrio {:method :post
-                     :uri "/api/auth/refresh"
-                     :timeout 8000
-                     :headers {"Accept" "application/json"}
-                     :params {:refresh_token refresh-token}
-                     :format (ajax/json-request-format)
-                     :response-format (ajax/json-response-format {:keywords? true})
-                     :on-success [::refresh-success]
-                     :on-failure [::refresh-failed]}}))))
+   (if (not (get-in db [:auth :has-refresh?]))
+     {:dispatch [::logout {:reason "Session expired. Please sign in again"
+                           :silent? false}]}
+     {:db (-> db
+              (assoc-in [:auth :refreshing?] true)
+              (assoc-in [:auth :error] nil))
+      :http-xhrio {:method :post
+                   :uri "/api/auth/refresh"
+                   :timeout 8000
+                   :headers {"Accept" "application/json"}
+                   :with-credentials? true
+                   :response-format (ajax/json-response-format {:keywords? true})
+                   :on-success [::refresh-success]
+                   :on-failure [::refresh-failed]}})))
 
 (rf/reg-event-fx
  ::refresh-success
- (fn [{:keys [db]} [_ {:keys [access_token expires_at refresh_token refresh_expires_at user]}]]
+ (fn [{:keys [db]} [_ {:keys [access_token expires_at user]}]]
    (let [admin? (admin-user? user)
          dispatches (cond-> []
                        true (conj [::todo-events/fetch-todos])
@@ -265,15 +244,13 @@
               (assoc :user user)
               (assoc-in [:auth :token] access_token)
               (assoc-in [:auth :expires-at] expires_at)
-              (assoc-in [:auth :refresh-token] refresh_token)
-              (assoc-in [:auth :refresh-expires-at] refresh_expires_at)
+              (assoc-in [:auth :has-refresh?] true)
               (assoc-in [:auth :refreshing?] false)
               (assoc-in [:auth :error] nil))
       :dispatch-n dispatches
       ::persist-auth {:token access_token
                       :expires-at expires_at
-                      :refresh-token refresh_token
-                      :refresh-expires-at refresh_expires_at
+                      :has-refresh? true
                       :user user}})))
 
 (rf/reg-event-fx
@@ -287,12 +264,26 @@
      {:db (assoc-in db [:auth :refreshing?] false)
       :dispatch [::logout {:reason message :silent? false}]})))
 
+(rf/reg-event-db
+ ::logout-request-complete
+ (fn [db _]
+   db))
+
 (rf/reg-event-fx
  ::logout
  (fn [{:keys [db]} [_ {:keys [reason silent?]}]]
-   (let [next-db (reset-auth db)]
+   (let [next-db (reset-auth db)
+         request {:method :post
+                  :uri "/api/auth/logout"
+                  :timeout 6000
+                  :headers {"Accept" "application/json"}
+                  :with-credentials? true
+                  :response-format (ajax/json-response-format {:keywords? true})
+                  :on-success [::logout-request-complete]
+                  :on-failure [::logout-request-complete]}]
      (cond-> {:db next-db
-              ::persist-auth nil}
+              ::persist-auth nil
+              :http-xhrio request}
        (and reason (not silent?))
        (assoc :dispatch [::toast/enqueue-toast {:message reason :variant :info}])))))
 
