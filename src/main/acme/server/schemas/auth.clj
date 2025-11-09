@@ -26,4 +26,13 @@
    [:token_type non-blank-string]
    [:expires_at non-blank-string]
    [:expires_in [:int {:min 1}]]
+   [:refresh_token non-blank-string]
+   [:refresh_expires_at non-blank-string]
    [:user user.schema/user-response]])
+
+(def refresh-body
+  [:map
+   [:refresh_token non-blank-string]])
+
+(def refresh-response
+  login-response)

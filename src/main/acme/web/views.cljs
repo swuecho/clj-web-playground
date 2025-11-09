@@ -11,6 +11,7 @@
    [acme.web.feature.todos.components.todo-table :refer [todo-table]]
    [acme.web.feature.users.components.add-user-dialog :refer [add-user-dialog]]
    [acme.web.feature.users.components.edit-user-dialog :refer [edit-user-dialog]]
+   [acme.web.feature.users.components.user-sessions-dialog :refer [user-sessions-dialog]]
    [acme.web.feature.users.components.users-table :refer [users-table]]
    [acme.web.feature.users.events :as user-events]
    [acme.web.feature.auth.subs :as auth-subs]
@@ -21,6 +22,7 @@
   [:<>
    [add-user-dialog]
    [edit-user-dialog]
+   [user-sessions-dialog]
    [:div {:class "space-y-6"}
     [:div {:class "flex flex-wrap items-center justify-between gap-4"}
      [:div

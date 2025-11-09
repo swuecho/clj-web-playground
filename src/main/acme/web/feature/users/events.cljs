@@ -374,3 +374,107 @@
         (unauthorized? status) (assoc :dispatch [:acme.web.feature.auth.events/session-expired nil])
         (not (unauthorized? status))
         (assoc :dispatch [::toast/enqueue-toast {:message msg :variant :error}])))))
+
+(defn- find-user [users uuid]
+  (some #(when (= uuid (:uuid %)) %) users))
+
+(rf/reg-event-fx
+ ::open-user-sessions
+ (fn [{:keys [db]} [_ uuid]]
+   (if-let [user (find-user (:users db) uuid)]
+     {:db (-> db
+              (assoc-in [:user-sessions :visible?] true)
+              (assoc-in [:user-sessions :user] user)
+              (assoc-in [:user-sessions :tokens] [])
+              (assoc-in [:user-sessions :error] nil)
+              (assoc-in [:user-sessions :loading?] true)
+              (assoc-in [:user-sessions :revoking] #{}))
+      :dispatch [::fetch-user-sessions uuid]}
+     {:dispatch [::toast/enqueue-toast {:message "User not found"
+                                        :variant :error}]})))
+
+(rf/reg-event-db
+ ::close-user-sessions
+ (fn [db _]
+   (-> db
+       (assoc-in [:user-sessions :visible?] false)
+       (assoc-in [:user-sessions :user] nil)
+       (assoc-in [:user-sessions :tokens] [])
+       (assoc-in [:user-sessions :error] nil)
+       (assoc-in [:user-sessions :loading?] false)
+       (assoc-in [:user-sessions :revoking] #{}))))
+
+(rf/reg-event-fx
+ ::fetch-user-sessions
+ (fn [{:keys [db]} [_ uuid]]
+   (let [headers (http/authorized-headers db)
+         uuid (some-> uuid str/trim)]
+     {:db (assoc-in db [:user-sessions :loading?] true)
+      :http-xhrio {:method :get
+                   :uri (str "/api/users/" uuid "/refresh-tokens")
+                   :timeout 8000
+                   :headers headers
+                   :response-format (ajax/json-response-format {:keywords? true})
+                   :on-success [::user-sessions-loaded]
+                   :on-failure [::user-sessions-failed]}})))
+
+(rf/reg-event-db
+ ::user-sessions-loaded
+ (fn [db [_ tokens]]
+   (-> db
+       (assoc-in [:user-sessions :tokens] tokens)
+       (assoc-in [:user-sessions :loading?] false)
+       (assoc-in [:user-sessions :error] nil))))
+
+(rf/reg-event-fx
+ ::user-sessions-failed
+ (fn [{:keys [db]} [_ {:keys [status status-text]}]]
+   (let [unauthorized (unauthorized? status)
+         msg (str "Unable to load sessions"
+                   (when status (str " (" status ")"))
+                   (when status-text (str ": " status-text)))]
+     (cond-> {:db (-> db
+                      (assoc-in [:user-sessions :loading?] false)
+                      (assoc-in [:user-sessions :error] msg))}
+       unauthorized (assoc :dispatch [:acme.web.feature.auth.events/session-expired nil])
+       (not unauthorized) (assoc :dispatch [::toast/enqueue-toast {:message msg :variant :error}])))))
+
+(rf/reg-event-fx
+ ::revoke-refresh-token
+ (fn [{:keys [db]} [_ token-id]]
+   (let [uuid (get-in db [:user-sessions :user :uuid])
+         headers (http/authorized-headers db)
+         token-id (some-> token-id str/trim)]
+     (if (or (str/blank? uuid) (str/blank? token-id))
+       {:dispatch [::toast/enqueue-toast {:message "Token not found"
+                                          :variant :error}]}
+       {:db (update-in db [:user-sessions :revoking] conj token-id)
+        :http-xhrio {:method :delete
+                     :uri (str "/api/users/" uuid "/refresh-tokens/" token-id)
+                     :timeout 8000
+                     :headers headers
+                     :response-format (ajax/json-response-format {:keywords? true})
+                     :on-success [::refresh-token-revoked token-id]
+                     :on-failure [::refresh-token-revoke-failed token-id]}}))))
+
+(rf/reg-event-fx
+ ::refresh-token-revoked
+ (fn [{:keys [db]} [_ token-id _response]]
+   {:db (-> db
+            (update-in [:user-sessions :tokens]
+                       (fn [tokens]
+                         (vec (remove #(= token-id (:id %)) tokens))))
+            (update-in [:user-sessions :revoking] disj token-id))
+    :dispatch [::toast/enqueue-toast {:message "Refresh token revoked"
+                                      :variant :success}]}))
+
+(rf/reg-event-fx
+ ::refresh-token-revoke-failed
+ (fn [{:keys [db]} [_ token-id {:keys [status status-text]}]]
+   (let [unauthorized (unauthorized? status)
+         msg (str "Revoke failed"
+                  (when status (str " (" status ")"))
+                  (when status-text (str ": " status-text)))]
+     (cond-> {:db (update-in db [:user-sessions :revoking] disj token-id)}
+       unauthorized (assoc :dispatch [:acme.web.feature.auth.events/session-expired nil])
+       (not unauthorized) (assoc :dispatch [::toast/enqueue-toast {:message msg :variant :error}])))))

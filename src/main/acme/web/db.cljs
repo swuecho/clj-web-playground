@@ -10,7 +10,10 @@
    :user nil
    :auth {:token nil
           :expires-at nil
+          :refresh-token nil
+          :refresh-expires-at nil
           :logging-in? false
+          :refreshing? false
           :error nil
           :mode :login
           :register {:submitting? false
@@ -37,6 +40,12 @@
                          :age 0
                          :email ""}}
    :pending-deletes #{}
+   :user-sessions {:visible? false
+                   :user nil
+                   :tokens []
+                   :loading? false
+                   :error nil
+                   :revoking #{} }
    :todos {:items []
            :loading? false
            :error nil

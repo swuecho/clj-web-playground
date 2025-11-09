@@ -41,3 +41,8 @@
  ::register-error
  (fn [db]
    (get-in db [:auth :register :error])))
+
+(rf/reg-sub
+ ::refreshing?
+ (fn [db]
+   (get-in db [:auth :refreshing?])))
