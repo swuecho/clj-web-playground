@@ -58,7 +58,7 @@ clojure -M:backend
 Then issue a test request, e.g.:
 
 ```
-curl -X POST http://localhost:8081/api/todo \
+curl -X POST http://localhost:8082/api/todo \
      -H "Content-Type: application/json" \
      -d '{"title": "Buy milk"}'
 ```

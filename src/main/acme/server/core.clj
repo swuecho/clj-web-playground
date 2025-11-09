@@ -258,7 +258,7 @@
 
 (defn system-config
   "Build the Integrant system configuration. Accepts optional overrides:
-  - `:port` will override the HTTP port (default 8081 or $PORT).
+  - `:port` will override the HTTP port (default 8082 or $PORT).
   - `:reload?` enables wrap-reload (default honours `ACME_DISABLE_RELOAD`).
   - `:reload-dirs` overrides the directories that trigger reloads.
   - `:database-url` overrides the JDBC connection string."

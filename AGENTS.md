@@ -12,7 +12,7 @@
 - when user rounded, do not use round beyound rounded unless requested.
 
 ## Build, Test, and Development Commands
-- `npm run backend` – start the Integrant-backed API server (defaults to port 8081, honors `PORT`).
+- `npm run backend` – start the Integrant-backed API server (defaults to port 8082, honors `PORT`).
 - `npm run frontend` – launch `shadow-cljs watch web` with the Tailwind/Sass build hook.
 - `npm run dev` – run backend and frontend watchers together for a full-stack dev loop.
 - `npm run build` – build production-ready Sass, Tailwind output, and the optimized cljs bundle.
@@ -27,4 +27,3 @@
 - Place automated tests under `src/test` following the same namespace pattern as production code (`acme.<domain>.test-*`); favor focused integrant/component tests for servers and reagent/re-frame view tests for the UI.
 - Until a dedicated test alias is added, exercise tests via the REPL (`npm run repl`) or targeted `clj -X` invocations inside your test namespaces.
 - For backend additions, provide Malli schemas and handler-level tests that cover expected validation failures and success paths; mirror API behavior using `docs/todo-api.md` payloads.
-
