@@ -16,7 +16,7 @@
                                        :variant :default
                                        :aria-label "Edit todo"
                                        :title "Edit todo"
-                                       :on-click #(rf/dispatch [::todo-events/open-edit-todo-dialog id-str])}]
+                                       :on-click #(rf/dispatch [::todo-events/open-edit-todo-dialog todo-id])}]
          [action-button/action-button {:label [icons/delete-2-icon]
                                        :aria-label (if @pending? "Deleting..." "Delete")
                                        :variant :default
