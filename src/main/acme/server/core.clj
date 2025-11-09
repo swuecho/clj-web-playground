@@ -15,6 +15,7 @@
    [acme.server.middleware.logging :as logging :refer [wrap-request-logging]]
    [integrant.core :as ig]
    [reitit.ring :as ring]
+   [muuntaja.core :as m]
    [reitit.coercion.malli :as malli-coercion]
    [reitit.ring.coercion :as ring-coercion]
    [reitit.ring.middleware.muuntaja :as muuntaja]
@@ -200,11 +201,15 @@
            :openapi {:id :acme-api}
            :handler (openapi/create-openapi-handler)}}]])
 
+(def muuntaja-instance
+  (m/create
+   (assoc m/default-options :default-format "application/json")))
+
 (def router
   (ring/router
    routes
    {:data {:coercion (malli-coercion/create)
-           :muuntaja http/muuntaja-instance
+           :muuntaja muuntaja-instance
            :openapi {:id :acme-api
                      :info {:title "Acme API"
                             :version "1.0.0"
@@ -258,7 +263,7 @@
 
 (defn system-config
   "Build the Integrant system configuration. Accepts optional overrides:
-  - `:port` will override the HTTP port (default 8081 or $PORT).
+  - `:port` will override the HTTP port (default 8082 or $PORT).
   - `:reload?` enables wrap-reload (default honours `ACME_DISABLE_RELOAD`).
   - `:reload-dirs` overrides the directories that trigger reloads.
   - `:database-url` overrides the JDBC connection string."

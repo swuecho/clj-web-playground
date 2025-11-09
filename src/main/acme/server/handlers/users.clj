@@ -6,12 +6,10 @@
    [acme.server.auth :as auth]
    [acme.server.db :as db]
    [acme.server.http :as http]
-   [acme.server.users.validation :as user.validation])
+   [acme.server.schemas.validation.users :as user.validation])
   (:import
    (java.sql SQLException)
    (java.util UUID)))
-
-(def ^:const password-min-length 8)
 
 (defn- normalize-email [email]
   (user.validation/normalize-email email))
@@ -73,7 +71,9 @@
         supplied-uuid (some-> uuid str str/trim not-empty)
         parsed-uuid (some-> supplied-uuid ->uuid)
         normalized-email (normalize-email email)
-        normalized-password (some-> password str str/trim)
+        {:keys [value error]} (user.validation/ensure-password password)
+        normalized-password value
+        password-error error
         duplicate? (when parsed-uuid
                      (user-exists? parsed-uuid))
         email-duplicate? (email-conflict? normalized-email)]
@@ -99,11 +99,8 @@
       email-duplicate?
       {:status 409 :message "Email is already in use"}
 
-      (str/blank? (or normalized-password ""))
-      {:status 400 :message "Password is required"}
-
-      (< (count normalized-password) password-min-length)
-      {:status 400 :message (format "Password must be at least %d characters" password-min-length)}
+      password-error
+      {:status 400 :message password-error}
 
       :else
       {:status 201
@@ -123,7 +120,9 @@
         trimmed-name (when name-present? (some-> name str/trim))
         parsed-age (when age-present? (normalize-age age))
         normalized-email (when email-present? (normalize-email email))
-        normalized-password (when password-present? (some-> password str str/trim))]
+        password-result (when password-present? (user.validation/ensure-password password))
+        normalized-password (:value password-result)
+        password-error (:error password-result)]
     (cond
       (not (or name-present? age-present? email-present? password-present?))
       {:status 400 :message "Supply at least one field to update"}
@@ -143,11 +142,8 @@
       (and email-present? (email-conflict? normalized-email uuid))
       {:status 409 :message "Email is already in use"}
 
-      (and password-present? (str/blank? (or normalized-password "")))
-      {:status 400 :message "Password is required"}
-
-      (and password-present? (< (count normalized-password) password-min-length))
-      {:status 400 :message (format "Password must be at least %d characters" password-min-length)}
+      (and password-present? password-error)
+      {:status 400 :message password-error}
 
       :else
       {:status 200
@@ -155,7 +151,7 @@
                   name-present? (assoc :name trimmed-name)
                   age-present? (assoc :age parsed-age)
                   email-present? (assoc :email normalized-email)
-                  password-present? (assoc :password normalized-password))})))
+                  (and password-present? (not password-error)) (assoc :password normalized-password))})))
 
 (defn- ensure-unique-uuid [{:keys [uuid] :as user}]
   (if uuid

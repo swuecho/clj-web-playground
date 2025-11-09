@@ -4,7 +4,7 @@
    [clojure.string :as str]
    [acme.server.auth :as auth]
    [acme.server.db :as db]
-   [acme.server.users.validation :as validation])
+   [acme.server.schemas.validation.users :as validation])
   (:import
    (java.util UUID)))
 

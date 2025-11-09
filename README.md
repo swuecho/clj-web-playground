@@ -2,7 +2,7 @@
 
 ## Backend (Clojure)
 
-- Start the API server with `npm run backend -- [port]`. If no port is supplied it defaults to `8081`, or you can set the `PORT` env var. (This wraps `clj -M:backend`, which you can still invoke directly.)
+- Start the API server with `npm run backend -- [port]`. If no port is supplied it defaults to `8082`, or you can set the `PORT` env var. (This wraps `clj -M:backend`, which you can still invoke directly.)
 - Use `npm run repl` (alias for `clj -M:repl`) to start an nREPL server with CIDER middleware preloaded.
 - Endpoints provided:
   - `GET /api/health` – simple readiness probe.

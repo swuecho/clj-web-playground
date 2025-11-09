@@ -101,7 +101,7 @@ attribute in HTTPS environments) and `ACME_REFRESH_COOKIE_SAMESITE` (no attribut
 1. **Login and capture the cookie**
 
    ```bash
-   curl -X POST http://localhost:8081/api/auth/login \
+   curl -X POST http://localhost:8082/api/auth/login \
      -H 'Content-Type: application/json' \
      -d '{"email":"demo@example.com","password":"correct horse"}' \
      -c cookies.txt
@@ -113,7 +113,7 @@ attribute in HTTPS environments) and `ACME_REFRESH_COOKIE_SAMESITE` (no attribut
 2. **Exchange the cookie for a new access token**
 
    ```bash
-   curl -X POST http://localhost:8081/api/auth/refresh \
+   curl -X POST http://localhost:8082/api/auth/refresh \
      -b cookies.txt -c cookies.txt
    ```
 
@@ -141,7 +141,7 @@ scenes the following endpoints are available:
 1. Authenticate (capture cookies if you plan to refresh via curl):
 
 ```bash
-curl -X POST http://localhost:8081/api/auth/login \
+curl -X POST http://localhost:8082/api/auth/login \
   -H 'Content-Type: application/json' \
   -d '{"email":"demo@example.com","password":"correct horse"}' \
   -c cookies.txt
@@ -168,7 +168,7 @@ Response:
 2. Call protected endpoints by passing the token:
 
 ```bash
-curl http://localhost:8081/api/users \
+curl http://localhost:8082/api/users \
   -H 'Authorization: Bearer <jwt>'
 ```
 
