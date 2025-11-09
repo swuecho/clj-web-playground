@@ -10,8 +10,7 @@
    :user nil
    :auth {:token nil
           :expires-at nil
-          :refresh-token nil
-          :refresh-expires-at nil
+          :has-refresh? false
           :logging-in? false
           :refreshing? false
           :error nil

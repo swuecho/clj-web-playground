@@ -39,9 +39,9 @@
     (when-let [raw (.getItem store auth-key)]
       (when-let [data (parse-json raw)]
         (let [access-expired? (expired? (:expires-at data))
-              refresh-expired? (expired? (:refresh_expires-at data))]
+              has-refresh? (true? (:has-refresh? data))]
           (cond
-            refresh-expired?
+            (and access-expired? (not has-refresh?))
             (do
               (.removeItem store auth-key)
               nil)

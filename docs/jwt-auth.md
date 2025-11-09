@@ -72,7 +72,9 @@ alter table todo_items add column user_id uuid;
 ### Refresh Tokens
 
 Access tokens remain short lived (1 hour by default) and are now paired with revocable refresh
-tokens. Each refresh token is persisted in a dedicated `"RefreshToken"` table:
+tokens. Each refresh token is persisted in a dedicated `"RefreshToken"` table and is delivered to
+clients via an HttpOnly cookie named `acme-refresh` (the raw value is never exposed to
+application/JavaScript code):
 
 ```sql
 create table if not exists "RefreshToken" (
@@ -88,34 +90,37 @@ create table if not exists "RefreshToken" (
 create index if not exists refresh_token_user_idx on "RefreshToken" (user_uuid);
 ```
 
-Tokens are stored as BCrypt hashes; the API only returns the raw token once. Use the
-`ACME_REFRESH_TTL_SECONDS` (or `ACME_REFRESH_TTL_DAYS`, defaults to 30 days) environment variable to
-adjust their lifetime.
+Tokens are stored as BCrypt hashes; the API only returns the raw token once (inside the cookie). Use
+`ACME_REFRESH_TTL_SECONDS` (or `ACME_REFRESH_TTL_DAYS`, defaults to 30 days) to adjust their
+lifetime. Cookie behavior can be tuned with `ACME_REFRESH_COOKIE_SECURE` (force the `Secure`
+attribute in HTTPS environments) and `ACME_REFRESH_COOKIE_SAMESITE` (no attribute by default; set to
+`strict`, `lax`, or `none` as needed).
 
 ### Refresh flow
 
-The login endpoint now returns both tokens:
+1. **Login and capture the cookie**
 
-```json
-{
-  "access_token": "<jwt>",
-  "expires_at": "2024-06-01T18:32:11Z",
-  "refresh_token": "<token-id>.<secret>",
-  "refresh_expires_at": "2024-07-01T18:32:11Z",
-  "user": { ... }
-}
-```
+   ```bash
+   curl -X POST http://localhost:8081/api/auth/login \
+     -H 'Content-Type: application/json' \
+     -d '{"email":"demo@example.com","password":"correct horse"}' \
+     -c cookies.txt
+   ```
 
-Exchange a refresh token for a new session via `POST /api/auth/refresh`:
+   The JSON response only contains the short-lived access token. The refresh token is stored in
+   `cookies.txt` as `acme-refresh`.
 
-```bash
-curl -X POST http://localhost:8081/api/auth/refresh \
-  -H 'Content-Type: application/json' \
-  -d '{"refresh_token":"<token-id>.<secret>"}'
-```
+2. **Exchange the cookie for a new access token**
 
-The frontend automatically attempts this exchange whenever the access token expires. If the refresh
-token is missing, expired, or revoked the user is signed out.
+   ```bash
+   curl -X POST http://localhost:8081/api/auth/refresh \
+     -b cookies.txt -c cookies.txt
+   ```
+
+   The backend rotates the refresh token, sets a new cookie, and returns a fresh access token. If
+   the cookie is missing, expired, or revoked the client receives a 401 and should send the user to
+   the login screen. Calling `POST /api/auth/logout` similarly revokes the cookie and prevents future
+   refreshes until the user signs back in.
 
 Administrators can review and revoke refresh tokens from **Users → Sessions** in the UI. Behind the
 scenes the following endpoints are available:
@@ -127,15 +132,19 @@ scenes the following endpoints are available:
 
 - `ACME_JWT_SECRET` — **required in production**. Defaults to a dev-only secret, so set this for any shared environment.
 - `ACME_JWT_TTL_SECONDS` / `ACME_JWT_TTL_MINUTES` — optionally override the 1-hour token lifetime.
+- `ACME_REFRESH_TTL_SECONDS` / `ACME_REFRESH_TTL_DAYS` — override refresh token lifetime (defaults to 30 days).
+- `ACME_REFRESH_COOKIE_SECURE` — set to `1`/`true` when the app is served over HTTPS so the cookie gains the `Secure` attribute.
+- `ACME_REFRESH_COOKIE_SAMESITE` — override the SameSite attribute (`strict`, `lax`, or `none`); defaults to `lax`.
 
 ## API usage
 
-1. Authenticate:
+1. Authenticate (capture cookies if you plan to refresh via curl):
 
 ```bash
 curl -X POST http://localhost:8081/api/auth/login \
   -H 'Content-Type: application/json' \
-  -d '{"email":"demo@example.com","password":"correct horse"}'
+  -d '{"email":"demo@example.com","password":"correct horse"}' \
+  -c cookies.txt
 ```
 
 Response:
@@ -163,4 +172,6 @@ curl http://localhost:8081/api/users \
   -H 'Authorization: Bearer <jwt>'
 ```
 
-The frontend login form now talks to `/api/auth/login`; once a token is stored, every todo/user request automatically includes the bearer header. A 401 from the server clears the client session and prompts the user to sign back in.
+When the access token expires the frontend calls `/api/auth/refresh` with `withCredentials=true` so
+the HttpOnly cookie is attached. `/api/auth/logout` revokes the refresh cookie on the server and the
+client clears any cached access tokens, forcing the next login.
