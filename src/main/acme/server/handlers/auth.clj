@@ -4,10 +4,9 @@
    [acme.server.db :as db]
    [acme.server.handlers.users :as user-handlers]
    [acme.server.http :as http]
-   [acme.server.refresh-tokens :as refresh-tokens]
+   [acme.server.services.refresh-tokens :as refresh-tokens]
    [acme.server.users.validation :as user.validation]
    [clojure.string :as str]
-   [clojure.tools.logging :as log]
    [ring.util.response :as response])
   (:import
    (java.util UUID)))
