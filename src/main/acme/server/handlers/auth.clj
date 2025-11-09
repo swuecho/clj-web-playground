@@ -5,7 +5,7 @@
    [acme.server.handlers.users :as user-handlers]
    [acme.server.http :as http]
    [acme.server.services.refresh-tokens :as refresh-tokens]
-   [acme.server.users.validation :as user.validation]
+   [acme.server.schemas.validation.users :as user.validation]
    [clojure.string :as str]
    [ring.util.response :as response])
   (:import
