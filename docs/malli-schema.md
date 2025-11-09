@@ -42,3 +42,26 @@ When adding a new endpoint or data shape:
 4. If the payload is exposed to clients, remember to keep corresponding examples/descriptions in `docs/todo-api.md` or other reference files aligned with the Malli source of truth.
 
 Following this pattern keeps validation logic declarative, promotes reuse, and ensures API documentation, runtime coercion, and handler implementations never drift.
+
+## Using Malli Validation
+1. **Require the shared helpers.** Pull in `acme.server.schemas.validation.common` (and `...validation.users` when email/password helpers are needed) inside your schema namespace: `(:require [acme.server.schemas.validation.common :as v])`.
+2. **Compose schemas from primitives.** Build request/response shapes with the shared predicates to guarantee consistent error messaging:
+   ```clojure
+   (def project-body
+     [:map
+      [:name v/non-blank-string]
+      [:owner_id v/uuid-string]])
+   ```
+3. **Expose the schema via your routes.** In `acme.server.core`, reference the schema in the appropriate route entry—`{:parameters {:body project.schema/project-body}}` for requests, `{:responses {201 {:body project.schema/project-response}}}` for replies. Reitit will run Malli-based coercion before/after the handler, returning structured 400 errors when validation fails.
+4. **Describe path/query params explicitly.** Path pieces and query strings need their own `[:map ...]` definitions so Malli can coerce them prior to handler execution (e.g., `[:parameters {:path project.schema/id-path}]`).
+5. **Iterate at the REPL.** Because schemas are just data, you can evaluate them directly and use Malli's `m/explain` / `m/validate` helpers while developing to preview validation errors before wiring the schema into the router.
+
+### Writing Rules Effectively
+- **Start from a base type.** Every predicate chains off a concrete type (`:string`, `:int`, `:map`). Use `:and` to layer constraints: `[:and :string [:fn {:error/message "..."} predicate]]`.
+- **Attach friendly errors.** Pass `{:error/message ...}` metadata to `:fn` or constraint entries so callers get actionable feedback (see `v/non-blank-string`).
+- **Share predicates for reuse.** Common checks (UUIDs, emails, password length) belong in `acme.server.schemas.validation.*` and are pulled into schemas with aliases like `:as v` to avoid copy/paste.
+- **Control map openness.** Add `{:closed true}` to map schemas when you want Malli to reject unknown keys (used for user and refresh token responses). Leave it off for payloads that may evolve (todos).
+- **Model collections explicitly.** Wrap vectors/lists using `[:sequential child-schema]` or `[:vector child-schema]` so coercion understands nested structures—for example, `todo-list-response`.
+- **Parameterize numbers and enums.** Numeric constraints go inside the type metadata (`[:int {:min 0 :max 100}]`), while limited string sets should use `[:enum "draft" "published"]`.
+- **Combine optional + maybe.** Use `{:optional true}` for keys that may be absent and `[:maybe ...]` for nullable values when the key is present but can be `nil` (refresh token timestamps).
+- **Leverage helper functions.** When validation requires more than a pure predicate, write a helper in `schemas.validation.*` (e.g., `user.validation/valid-email?`) and reference it inside the `:fn` clause to keep side effects out of schemas.
