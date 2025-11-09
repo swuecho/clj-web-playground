@@ -15,6 +15,7 @@
    [acme.server.middleware.logging :as logging :refer [wrap-request-logging]]
    [integrant.core :as ig]
    [reitit.ring :as ring]
+   [muuntaja.core :as m]
    [reitit.coercion.malli :as malli-coercion]
    [reitit.ring.coercion :as ring-coercion]
    [reitit.ring.middleware.muuntaja :as muuntaja]
@@ -200,11 +201,15 @@
            :openapi {:id :acme-api}
            :handler (openapi/create-openapi-handler)}}]])
 
+(def muuntaja-instance
+  (m/create
+   (assoc m/default-options :default-format "application/json")))
+
 (def router
   (ring/router
    routes
    {:data {:coercion (malli-coercion/create)
-           :muuntaja http/muuntaja-instance
+           :muuntaja muuntaja-instance
            :openapi {:id :acme-api
                      :info {:title "Acme API"
                             :version "1.0.0"

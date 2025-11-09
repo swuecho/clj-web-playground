@@ -1,11 +1,9 @@
 (ns acme.server.http
   (:require
    [clojure.string :as str]
-   [muuntaja.core :as m]))
+   ))
 
-(def muuntaja-instance
-  (m/create
-   (assoc m/default-options :default-format "application/json")))
+
 
 (def json-format "application/json")
 
