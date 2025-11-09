@@ -8,6 +8,7 @@
     "frontend:release": "shadow-cljs release web",
     "dev": "run-p backend frontend",
     "repl": "clj -M:repl",
+    "test": "clj -M:test",
     "sass:watch": "sass --watch public/css/users-table-rc.scss:public/css/users-table-rc.css --no-source-map",
     "sass:build": "sass --no-source-map public/css/users-table-rc.scss public/css/users-table-rc.css",
     "tailwind:build": "tailwindcss -c tailwind.config.js -i src/styles/main-tailwind.css -o public/css/main-tailwind.css --minify",
