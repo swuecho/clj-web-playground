@@ -33,23 +33,27 @@
                              s))))
             metric-cards (cond-> []
                            can-manage-users?
-                           (conj [metric-card {:title "Active Users"
+                           (conj [metric-card {:key "users-count"
+                                               :title "Active Users"
                                                :value (str (count user-items))
                                                :subtext "People currently in the directory"}])
                            true
-                           (conj [metric-card {:title "Total Todos"
+                           (conj [metric-card {:key "todos-count"
+                                               :title "Total Todos"
                                                :value (str total-todos)
                                                :subtext (if (pos? total-todos)
                                                           (str completed " completed • " pending " open")
                                                           "No todos created yet")}])
                            true
                            (conj [metric-card {:title "Completion Rate"
+                                               :key "completion-rate"
                                                :value (str completion-rate "%")
                                                :subtext (if (pos? total-todos)
                                                           "Based on completed todos"
                                                           "Add todos to start tracking progress")}])
                            true
                            (conj [metric-card {:title "Pending Items"
+                                               :key "pending-items"
                                                :value (str pending)
                                                :subtext "Waiting for completion"}]))]
         [:div {:class "space-y-8"}

@@ -22,6 +22,8 @@
    [reitit.openapi :as openapi]
    [reitit.swagger-ui :as swagger-ui]
    [ring.adapter.jetty :as jetty]
+   [ring.middleware.cors :refer [wrap-cors]]
+   [ring.middleware.cookies :refer [wrap-cookies]]
    [ring.middleware.reload :refer [wrap-reload]]
    [ring.util.response :as response]))
 
@@ -234,16 +236,23 @@
       (response/content-type index "text/html; charset=utf-8"))))
 
 (def handler
-  (wrap-request-logging
-   (ring/ring-handler
-    router
-    (ring/routes
-     swagger-ui-handler
-     (ring/create-file-handler {:path "/" :root static-asset-root})
-     spa-index-handler
-     (ring/redirect-trailing-slash-handler)
-     (ring/create-default-handler
-      {:not-found http/not-found})))))
+  (-> (ring/ring-handler
+       router
+       (ring/routes
+        swagger-ui-handler
+        (ring/create-file-handler {:path "/" :root static-asset-root})
+        spa-index-handler
+        (ring/redirect-trailing-slash-handler)
+        (ring/create-default-handler
+         {:not-found http/not-found})))
+      (wrap-cors
+       :access-control-allow-origin [#"(?i)^https?://localhost(:\\d+)?$"
+                                     #"(?i)^https?://127\\.0\\.0\\.1(:\\d+)?$"]
+       :access-control-allow-methods [:get :post :put :patch :delete :options]
+       :access-control-allow-headers ["accept" "accept-language" "content-type" "authorization"]
+       :access-control-allow-credentials true)
+      wrap-cookies
+      wrap-request-logging))
 
 (defonce system* (atom nil))
 

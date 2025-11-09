@@ -31,6 +31,7 @@
 (defn- cookie-same-site []
   (case (some-> (System/getenv "ACME_REFRESH_COOKIE_SAMESITE") str/lower-case)
     "strict" :strict
+    "lax" :lax
     "none" :none
     :lax))
 
@@ -179,3 +180,9 @@
   (assoc (cookie-config)
          :value ""
          :max-age 0))
+
+(defn cookie->opts [{:keys [value] :as cookie}]
+  (when value
+    (let [opts (dissoc cookie :value)]
+      {:value value
+       :opts opts})))

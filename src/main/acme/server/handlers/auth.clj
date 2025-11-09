@@ -1,12 +1,14 @@
 (ns acme.server.handlers.auth
   (:require
-   [clojure.string :as str]
    [acme.server.auth :as auth]
    [acme.server.db :as db]
    [acme.server.handlers.users :as user-handlers]
    [acme.server.http :as http]
    [acme.server.refresh-tokens :as refresh-tokens]
-   [acme.server.users.validation :as user.validation])
+   [acme.server.users.validation :as user.validation]
+   [clojure.string :as str]
+   [clojure.tools.logging :as log]
+   [ring.util.response :as response])
   (:import
    (java.util UUID)))
 
@@ -45,8 +47,10 @@
       id])))
 
 (defn- attach-refresh-cookie [response refresh]
-  (if-let [cookie (refresh-tokens/build-refresh-cookie refresh)]
-    (assoc response :cookies {refresh-tokens/cookie-name cookie})
+  (if-let [{:keys [value opts]} (some-> refresh
+                                        refresh-tokens/build-refresh-cookie
+                                        refresh-tokens/cookie->opts)]
+    (response/set-cookie response refresh-tokens/cookie-name value opts)
     response))
 
 (defn- session-payload
@@ -119,8 +123,12 @@
         (if-let [user (fetch-user-by-uuid user-uuid)]
           (session-payload user refresh)
           (http/respond-json {:error "Account not found"} 404))
-        (-> (http/respond-json {:error "Refresh token is invalid or expired"} 401)
-            (assoc :cookies {refresh-tokens/cookie-name (refresh-tokens/clear-refresh-cookie)}))))))
+        (let [resp (http/respond-json {:error "Refresh token is invalid or expired"} 401)
+              cleared (some-> (refresh-tokens/clear-refresh-cookie)
+                              refresh-tokens/cookie->opts)]
+          (if cleared
+            (response/set-cookie resp refresh-tokens/cookie-name (:value cleared) (:opts cleared))
+            resp))))))
 
 (defn list-refresh-tokens-response [{:keys [parameters path-params]}]
   (let [uuid (or (get-in parameters [:path :uuid]) (:uuid path-params))
@@ -160,5 +168,8 @@
     (when (seq token)
       (when-let [{:keys [id]} (refresh-tokens/parse-token token)]
         (refresh-tokens/revoke-token! id)))
-    (-> (http/respond-json {:status "signed-out"})
-        (assoc :cookies {refresh-tokens/cookie-name (refresh-tokens/clear-refresh-cookie)}))))
+    (if-let [{:keys [value opts]} (some-> (refresh-tokens/clear-refresh-cookie)
+                                          refresh-tokens/cookie->opts)]
+      (response/set-cookie (http/respond-json {:status "signed-out"})
+                           refresh-tokens/cookie-name value opts)
+      (http/respond-json {:status "signed-out"}))))

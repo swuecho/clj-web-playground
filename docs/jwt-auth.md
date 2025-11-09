@@ -93,7 +93,8 @@ create index if not exists refresh_token_user_idx on "RefreshToken" (user_uuid);
 Tokens are stored as BCrypt hashes; the API only returns the raw token once (inside the cookie). Use
 `ACME_REFRESH_TTL_SECONDS` (or `ACME_REFRESH_TTL_DAYS`, defaults to 30 days) to adjust their
 lifetime. Cookie behavior can be tuned with `ACME_REFRESH_COOKIE_SECURE` (force the `Secure`
-attribute in HTTPS environments) and `ACME_REFRESH_COOKIE_SAMESITE` (`strict` by default).
+attribute in HTTPS environments) and `ACME_REFRESH_COOKIE_SAMESITE` (no attribute by default; set to
+`strict`, `lax`, or `none` as needed).
 
 ### Refresh flow
 
@@ -133,7 +134,7 @@ scenes the following endpoints are available:
 - `ACME_JWT_TTL_SECONDS` / `ACME_JWT_TTL_MINUTES` — optionally override the 1-hour token lifetime.
 - `ACME_REFRESH_TTL_SECONDS` / `ACME_REFRESH_TTL_DAYS` — override refresh token lifetime (defaults to 30 days).
 - `ACME_REFRESH_COOKIE_SECURE` — set to `1`/`true` when the app is served over HTTPS so the cookie gains the `Secure` attribute.
-- `ACME_REFRESH_COOKIE_SAMESITE` — `strict` (default), `lax`, or `none`.
+- `ACME_REFRESH_COOKIE_SAMESITE` — override the SameSite attribute (`strict`, `lax`, or `none`); defaults to `lax`.
 
 ## API usage
 
