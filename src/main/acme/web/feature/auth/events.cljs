@@ -75,9 +75,9 @@
        (str/blank? trimmed-password)
        {:db (assoc-in db [:auth :error] "Password is required")}
 
-      (< (count trimmed-password) password-min-length)
-      {:db (assoc-in db [:auth :error]
-                     (str "Password must be at least " password-min-length " characters"))}
+       (< (count trimmed-password) password-min-length)
+       {:db (assoc-in db [:auth :error]
+                      (str "Password must be at least " password-min-length " characters"))}
 
        :else
        {:db (-> db
@@ -101,10 +101,10 @@
    (let [admin? (admin-user? user)
          welcome (str "Welcome back, " (or (:name user) (:email user)))
          dispatches (cond-> []
-                       admin? (conj [::user-events/fetch-users])
-                       true (conj [::todo-events/fetch-todos])
-                       true (conj [::toast/enqueue-toast {:message welcome
-                                                           :variant :success}]))]
+                      admin? (conj [::user-events/fetch-users])
+                      true (conj [::todo-events/fetch-todos])
+                      true (conj [::toast/enqueue-toast {:message welcome
+                                                         :variant :success}]))]
      {:db (-> db
               (assoc :isLoggedIn? true)
               (assoc :user user)
@@ -144,7 +144,7 @@
            (assoc-in [:auth :register :error] nil)
            (assoc-in [:auth :register :submitting?] false)
            (assoc-in [:auth :error] nil))
-        next-db))))
+       next-db))))
 
 (rf/reg-event-db
  ::clear-register-state
@@ -237,8 +237,8 @@
  (fn [{:keys [db]} [_ {:keys [access_token expires_at user]}]]
    (let [admin? (admin-user? user)
          dispatches (cond-> []
-                       true (conj [::todo-events/fetch-todos])
-                       admin? (conj [::user-events/fetch-users]))]
+                      true (conj [::todo-events/fetch-todos])
+                      admin? (conj [::user-events/fetch-users]))]
      {:db (-> db
               (assoc :isLoggedIn? true)
               (assoc :user user)
@@ -299,7 +299,7 @@
    (let [{:keys [message]} (session-context payload)]
      (cond
        (get-in db [:auth :refreshing?])
-       {} 
+       {}
 
        (refresh-available? db)
        {:dispatch [::attempt-refresh]}
@@ -319,8 +319,8 @@
            next-db (hydrate-auth db snapshot)
            admin? (admin-user? (:user snapshot))
            dispatches (cond-> []
-                         true (conj [::todo-events/fetch-todos])
-                         admin? (conj [::user-events/fetch-users]))]
+                        true (conj [::todo-events/fetch-todos])
+                        admin? (conj [::user-events/fetch-users]))]
        (cond
          has-token?
          {:db next-db
