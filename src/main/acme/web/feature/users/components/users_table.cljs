@@ -4,6 +4,7 @@
    [acme.web.feature.users.components.add-user-dialog :refer [add-user-dialog]]
    [acme.web.feature.users.components.edit-user-dialog :refer [edit-user-dialog]]
    [acme.web.feature.users.components.user-row-actions :refer [user-row-actions]]
+   [acme.web.feature.users.components.user-sessions-dialog :refer [user-sessions-dialog]]
    [acme.web.feature.users.events :as users-events]
    [acme.web.feature.users.subs :as users-subs]
    [re-frame.core :as rf]))
@@ -71,6 +72,7 @@
                        include-aux? (conj [toast-banner])
                        include-aux? (conj [add-user-dialog])
                        include-aux? (conj [edit-user-dialog])
+                       include-aux? (conj [user-sessions-dialog])
                        title (conj [:h1 {:class "text-2xl font-semibold"} title])
                        true (conj table-section)
                        actions? (conj actions))]

@@ -112,3 +112,38 @@
  :<- [::pending-deletes]
  (fn [pending [_ uuid]]
    (contains? pending uuid)))
+
+(rf/reg-sub
+ ::user-sessions
+ (fn [db]
+   (:user-sessions db)))
+
+(rf/reg-sub
+ ::user-sessions-visible?
+ (fn [db]
+   (get-in db [:user-sessions :visible?])))
+
+(rf/reg-sub
+ ::user-sessions-user
+ (fn [db]
+   (get-in db [:user-sessions :user])))
+
+(rf/reg-sub
+ ::user-sessions-tokens
+ (fn [db]
+   (get-in db [:user-sessions :tokens])))
+
+(rf/reg-sub
+ ::user-sessions-loading?
+ (fn [db]
+   (get-in db [:user-sessions :loading?])))
+
+(rf/reg-sub
+ ::user-sessions-error
+ (fn [db]
+   (get-in db [:user-sessions :error])))
+
+(rf/reg-sub
+ ::revoking-token?
+ (fn [db [_ token-id]]
+   (contains? (get-in db [:user-sessions :revoking]) token-id)))

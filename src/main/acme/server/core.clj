@@ -9,6 +9,7 @@
    [acme.server.schemas.auth :as auth.schema]
    [acme.server.schemas.todo :as todo.schema]
    [acme.server.schemas.user :as user.schema]
+   [acme.server.schemas.refresh-token :as refresh.schema]
    [acme.server.http :as http]
    [acme.server.middleware.auth :as auth-middleware]
    [acme.server.middleware.logging :as logging :refer [wrap-request-logging]]
@@ -51,10 +52,10 @@
 
 (def routes
   [["/api/health"
-    {:get {:summary "Service health check"
-           :tags ["System"]
-           :handler #'health/health-response
-           :responses {200 {:body [:map [:status [:enum "ok" "error"]]]}}}}]
+   {:get {:summary "Service health check"
+          :tags ["System"]
+          :handler #'health/health-response
+          :responses {200 {:body [:map [:status [:enum "ok" "error"]]]}}}}]
 
    ["/api/auth/login"
    {:post {:summary "Authenticate and issue a JWT"
@@ -64,6 +65,16 @@
             :responses {200 {:body auth.schema/login-response}
                         400 {:body [:map [:error :string]]}
                         401 {:body [:map [:error :string]]}}}}]
+
+  ["/api/auth/refresh"
+   {:post {:summary "Exchange refresh token for a new session"
+           :tags ["Auth"]
+           :handler #'auth-handler/refresh-response
+           :parameters {:body auth.schema/refresh-body}
+           :responses {200 {:body auth.schema/refresh-response}
+                       400 {:body [:map [:error :string]]}
+                       401 {:body [:map [:error :string]]}
+                       404 {:body [:map [:error :string]]}}}}]
 
   ["/api/auth/register"
    {:post {:summary "Register a new user"
@@ -152,7 +163,31 @@
               :handler #'users/delete-user-response
               :responses {200 {:body user.schema/user-response}
                           400 {:body [:map [:error :string]]}
-                          404 {:body [:map [:error :string]]}}}}]
+                         404 {:body [:map [:error :string]]}}}}]
+
+  ["/api/users/:uuid/refresh-tokens"
+   {:middleware [auth-middleware/wrap-require-identity
+                 auth-middleware/wrap-require-admin]
+    :parameters {:path user.schema/uuid-path}
+    :get {:summary "List user refresh tokens"
+          :tags ["Users" "Auth"]
+          :handler #'auth-handler/list-refresh-tokens-response
+          :responses {200 {:body refresh.schema/refresh-token-list-response}
+                      400 {:body [:map [:error :string]]}
+                      404 {:body [:map [:error :string]]}}}}]
+
+  ["/api/users/:uuid/refresh-tokens/:token-id"
+   {:middleware [auth-middleware/wrap-require-identity
+                 auth-middleware/wrap-require-admin]
+    :parameters {:path [:map
+                        [:uuid :string]
+                        [:token-id refresh.schema/token-id-schema]]}
+    :delete {:summary "Revoke a refresh token"
+             :tags ["Users" "Auth"]
+             :handler #'auth-handler/revoke-refresh-token-response
+             :responses {200 {:body [:map [:status :string]]}
+                         400 {:body [:map [:error :string]]}
+                         404 {:body [:map [:error :string]]}}}}]
 
    ["/openapi.json"
     {:get {:no-doc true

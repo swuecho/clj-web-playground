@@ -20,6 +20,11 @@
                                      :aria-label "Edit user"
                                      :title "Edit user"
                                      :on-click #(rf/dispatch [::users-events/open-edit-user-dialog uuid])}]
+       [action-button/action-button {:label "Sessions"
+                                     :variant :default
+                                     :aria-label "Manage sessions"
+                                     :title "Manage refresh tokens"
+                                     :on-click #(rf/dispatch [::users-events/open-user-sessions uuid])}]
        [action-button/action-button {:label [icons/delete-2-icon]
                                      :variant :default
                                      :aria-label (if @pending? "Deleting user" "Delete user")

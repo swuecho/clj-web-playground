@@ -69,6 +69,60 @@ update "UserTable" set role = 'admin' where email = 'demo@example.com';
 alter table todo_items add column user_id uuid;
 ```
 
+### Refresh Tokens
+
+Access tokens remain short lived (1 hour by default) and are now paired with revocable refresh
+tokens. Each refresh token is persisted in a dedicated `"RefreshToken"` table:
+
+```sql
+create table if not exists "RefreshToken" (
+  id uuid primary key,
+  user_uuid uuid not null references "UserTable"(uuid) on delete cascade,
+  token_hash text not null,
+  created_at timestamptz not null default now(),
+  last_used_at timestamptz,
+  expires_at timestamptz not null,
+  revoked_at timestamptz
+);
+
+create index if not exists refresh_token_user_idx on "RefreshToken" (user_uuid);
+```
+
+Tokens are stored as BCrypt hashes; the API only returns the raw token once. Use the
+`ACME_REFRESH_TTL_SECONDS` (or `ACME_REFRESH_TTL_DAYS`, defaults to 30 days) environment variable to
+adjust their lifetime.
+
+### Refresh flow
+
+The login endpoint now returns both tokens:
+
+```json
+{
+  "access_token": "<jwt>",
+  "expires_at": "2024-06-01T18:32:11Z",
+  "refresh_token": "<token-id>.<secret>",
+  "refresh_expires_at": "2024-07-01T18:32:11Z",
+  "user": { ... }
+}
+```
+
+Exchange a refresh token for a new session via `POST /api/auth/refresh`:
+
+```bash
+curl -X POST http://localhost:8081/api/auth/refresh \
+  -H 'Content-Type: application/json' \
+  -d '{"refresh_token":"<token-id>.<secret>"}'
+```
+
+The frontend automatically attempts this exchange whenever the access token expires. If the refresh
+token is missing, expired, or revoked the user is signed out.
+
+Administrators can review and revoke refresh tokens from **Users → Sessions** in the UI. Behind the
+scenes the following endpoints are available:
+
+- `GET /api/users/:uuid/refresh-tokens` — list tokens for a user (admin only)
+- `DELETE /api/users/:uuid/refresh-tokens/:token-id` — revoke a token (admin only)
+
 ## Environment variables
 
 - `ACME_JWT_SECRET` — **required in production**. Defaults to a dev-only secret, so set this for any shared environment.

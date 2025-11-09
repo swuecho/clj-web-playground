@@ -17,9 +17,11 @@
 
 (defn- expired? [iso-string]
   (try
-    (let [expires-ms (.getTime (js/Date. iso-string))
-          now-ms (.now js/Date.)]
-      (<= expires-ms now-ms))
+    (if (seq iso-string)
+      (let [expires-ms (.getTime (js/Date. iso-string))
+            now-ms (.now js/Date.)]
+        (<= expires-ms now-ms))
+      false)
     (catch :default _
       true)))
 
@@ -36,9 +38,20 @@
   (when-let [store (local-storage)]
     (when-let [raw (.getItem store auth-key)]
       (when-let [data (parse-json raw)]
-        (if (and (:expires-at data)
-                 (expired? (:expires-at data)))
-          (do
-            (.removeItem store auth-key)
-            nil)
-          data)))))
+        (let [access-expired? (expired? (:expires-at data))
+              refresh-expired? (expired? (:refresh_expires-at data))]
+          (cond
+            refresh-expired?
+            (do
+              (.removeItem store auth-key)
+              nil)
+
+            access-expired?
+            (let [next (-> data
+                           (assoc :token nil)
+                           (assoc :expires-at nil))]
+              (.setItem store auth-key (js/JSON.stringify (clj->js next)))
+              next)
+
+            :else
+            data))))))
