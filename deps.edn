@@ -40,4 +40,7 @@
                      "--middleware" "[cider.nrepl/cider-middleware]"]}
   :test {:extra-paths ["src/test"]
          :main-opts ["-m" "acme.test-runner"]}
-  :create-user {:main-opts ["-m" "acme.tools.create-user"]}}}
+  :create-user {:main-opts ["-m" "acme.tools.create-user"]}
+  :outdated {;; Note that it is `:deps`, not `:extra-deps`
+             :deps {com.github.liquidz/antq {:mvn/version "2.11.1276"}}
+             :main-opts ["-m" "antq.core"]}}}

@@ -36,3 +36,9 @@ With both processes running you can interact with the UI locally without relying
 - Run the container with `docker run -p 8080:8080 acme-app`; override the listen port via `-e PORT=<port>` if you need something other than the default 8080.
 - The backend serves both the API and the compiled frontend assets from the same Jetty process. Reload middleware is disabled in the image via `ACME_DISABLE_RELOAD=1`.
 - Use `docker compose up --build` to build and run the single-container stack; the service respects `PORT` and will fall back to the server’s default database settings unless you override `DATABASE_URL`.
+
+## Dependency Updates
+
+- Run `./scripts/update-deps.sh` to bump everything in `deps.edn`, `package.json`, and `package-lock.json` to the latest released versions. The script invokes Antq through the Clojure CLI plus `npm-check-updates` followed by `npm install --package-lock-only` so lockfiles stay in sync.
+- Add `--dry-run` to preview available upgrades without touching files.
+- Use `--clj-only` or `--npm-only` when you only need to refresh one ecosystem. Pass `--no-install` to skip the lockfile refresh (useful when you want to resolve npm installs yourself).
